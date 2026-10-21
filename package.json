@@ -1,6 +1,6 @@
 {
   "name": "good-splash-replacer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Replace the LG power-off logo on rooted webOS TVs",
   "license": "MIT",
