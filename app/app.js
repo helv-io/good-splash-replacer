@@ -4,7 +4,7 @@ function readLocal(f) { try { var x = new XMLHttpRequest(); x.open('GET', f, fal
 var CONFIG = readLocal('service/config.json') || { port: 8086 }, APPINFO = readLocal('appinfo.json') || {};
 var API = 'http://127.0.0.1:' + CONFIG.port;
 var st = null, sel = null, ver = 0, bridges = [], restarted = false, rerendering = {};
-var view = 'main', ed = null, menuId = null;
+var view = 'main', ed = null, menuId = null, seenPending = null;
 
 function $(i) { return document.getElementById(i); }
 function toast(t) { var e = $('toast'); e.textContent = t; e.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.opacity = 0; }, 2500); }
@@ -60,6 +60,8 @@ function refresh(force) {
       if (newer) sel = j.items[0].id;
       if (view == 'main') render();
       if (newer) toast('New logo received');
+      // The phone asked to apply it: open its menu so the person at the TV decides.
+      if (j.pending && j.pending.at != seenPending) { seenPending = j.pending.at; if (view == 'main' && st.items.some(function (i) { return i.id == j.pending.id; })) openMenu(j.pending.id); }
     }
   });
 }

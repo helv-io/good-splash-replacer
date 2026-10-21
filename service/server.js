@@ -10,7 +10,7 @@ const BASE = process.env.GSR_BASE || '/mnt/lg/user/custom-logo';
 const QML_DIRS = (process.env.GSR_QML_DIRS || '/usr/lib/qml/MasterBrand').split(':');
 const DRY = process.env.GSR_DRY_MOUNT === '1'; // tests: copy files, never mount
 const LIB = path.join(BASE, 'library'), MB = path.join(BASE, 'masterbrand');
-const MAX_BODY = 24 * 1024 * 1024, MAX_SOURCE = 12 * 1024 * 1024;
+const MAX_BODY = 48 * 1024 * 1024, MAX_SOURCE = 12 * 1024 * 1024;
 const APP_VERSION = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'appinfo.json'), 'utf8')).version; } catch (e) { return 'dev'; } })();
 
 // Fallback hints only, used when the logo files cannot be read. Discovery always wins.
@@ -272,6 +272,10 @@ function issueURL(r) {
 
 // ---------- HTTP ----------
 let version = Date.now();
+// A phone may ask for its upload to be applied; the TV shows the choice and the person at the TV confirms.
+let pending = null;
+const PENDING_MS = 2 * 60 * 1000;
+const pendingNow = () => pending && Date.now() - pending.at < PENDING_MS ? pending : null;
 const bump = () => { version = Date.now(); };
 function send(res, code, body, type) {
   res.writeHead(code, { 'Content-Type': type || 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' });
@@ -299,7 +303,7 @@ function handler(req, res) {
     if (M === 'GET' && p === '/') return send(res, 200, fs.readFileSync(path.join(__dirname, 'upload.html')), 'text/html; charset=utf-8');
     if (M === 'GET' && p === '/render.js') return send(res, 200, fs.readFileSync(path.join(__dirname, '..', 'render.js')), 'text/javascript');
     if (M === 'GET' && p === '/api/state') return send(res, 200, { ip: lanIP(), port: PORT, appVersion: APP_VERSION, version, discovery: discover().how,
-      supported: targets().length > 0 && !!targets()[0].path, targets: publicTargets(), current: current(), items: list() });
+      supported: targets().length > 0 && !!targets()[0].path, targets: publicTargets(), current: current(), pending: pendingNow(), items: list() });
     let m = p.match(/^\/img\/([a-z0-9-]+)\/([\w.]+)$/);
     if (M === 'GET' && m) {
       const dir = path.join(LIB, m[1]);
@@ -316,7 +320,7 @@ function handler(req, res) {
     if (M === 'GET' && p === '/report') return report().then(r => send(res, 200, reportPage(r), 'text/html; charset=utf-8'), fail);
     if (M === 'POST' && p === '/api/upload') return readJSON(req, j => {
       if (!j) return send(res, 400, { error: 'bad request' });
-      try { const id = 'u' + Date.now().toString(36); saveItem(id, j, true); bump(); send(res, 200, { ok: true, id }); } catch (e) { fail(e); }
+      try { const id = 'u' + Date.now().toString(36); saveItem(id, j, true); if (j.apply === true) pending = { id, at: Date.now() }; bump(); send(res, 200, { ok: true, id, pending: !!(j.apply === true) }); } catch (e) { fail(e); }
     });
     // Everything below changes the TV; only the TV app itself may call it.
     if (!local) return send(res, 403, { error: 'tv only' });

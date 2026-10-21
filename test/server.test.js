@@ -176,3 +176,11 @@ test('the service exits cleanly on SIGTERM', async () => {
   fs.rmSync(b2, { recursive: true, force: true });
   assert.equal(code, 0);
 });
+
+test('a phone can ask to apply, the TV decides', async () => {
+  const up = await call('POST', '/api/upload', { name: 'now', source: b64(png(300, 100)), renders: good(), apply: true });
+  assert.equal(up.status, 200); assert.equal(up.body.pending, true);
+  const st = await call('GET', '/api/state');
+  assert.equal(st.body.pending.id, up.body.id);
+  assert.notEqual(st.body.current, up.body.id);
+});
