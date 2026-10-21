@@ -19,6 +19,6 @@ sed -i "s/^  \"version\": \"$old\"/  \"version\": \"$v\"/" package.json
 python3 .agent-checks/bin/agent-checks release-version "v$v" || { git checkout -- app/appinfo.json package.json; exit 1; }
 if [ "$dry" = --dry-run ]; then git diff --stat; git checkout -- app/appinfo.json package.json; echo "dry run: nothing changed"; exit 0; fi
 tools/chk.sh
-git commit -q -am "Version $v"
+git commit -q -am "Version $v" -m "Docs: skip version bump only; the changelog is written in the change itself"
 git tag -a "v$v" -m "v$v"
 echo "Committed and tagged v$v. Push once CI is green on master: git push origin master v$v"
