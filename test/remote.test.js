@@ -25,3 +25,12 @@ test('delete asks first and focuses Cancel', () => {
   assert.match(app, /#confirm \[data-c="cancel"\]'\)\.focus\(\)/);
   assert.match(html, /data-m="delete"/);
 });
+
+test('the Magic Remote pointer can do everything the arrows can', () => {
+  assert.match(app, /addEventListener\('mouseover'/);
+  assert.match(app, /addEventListener\('click'/);
+  assert.match(app, /contains\('modal'\)\) \{ closeOverlay\(\)/);
+  assert.match(app, /\$\('grid'\)\.addEventListener\('wheel'/);
+  // pointer targets are limited to the open view, so a click never reaches the screen behind a dialog
+  assert.match(app, /focusables\(\)\.indexOf\(el\) >= 0/);
+});

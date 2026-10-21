@@ -2,6 +2,12 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2]
+
+### Added
+
+- Magic Remote pointer: hover focuses, click chooses, a click outside a menu or dialog closes it, and the wheel scrolls the logos. Arrows continue from where the pointer left off
+
 ## [0.2.1]
 
 ### Changed

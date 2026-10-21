@@ -196,5 +196,21 @@ document.addEventListener('keydown', function (e) {
   else return;
   e.preventDefault();
 });
+// ---------- Magic Remote pointer ----------
+// Hover moves focus, click activates, a click on a dialog backdrop closes it, the wheel scrolls the library.
+// Focus is the one source of truth, so arrows continue from wherever the pointer left it.
+function focusTarget(t) {
+  var el = t && t.closest ? t.closest('.btn,.tile') : null;
+  return el && focusables().indexOf(el) >= 0 ? el : null;
+}
+document.addEventListener('mouseover', function (e) { var el = focusTarget(e.target); if (el && document.activeElement !== el) el.focus(); });
+document.addEventListener('click', function (e) {
+  if (e.target.classList && e.target.classList.contains('modal')) { closeOverlay(); return; }
+  var el = focusTarget(e.target); if (!el) return;
+  e.preventDefault(); el.focus(); activate(el);
+});
+$('grid').addEventListener('wheel', function (e) { $('grid').scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); });
+document.addEventListener('focusin', function (e) { if (e.target.classList.contains('tile') && e.target.scrollIntoView) e.target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+
 refresh(true); loadToggle(); setInterval(refresh, 2000);
 setTimeout(focusMain, 300);
