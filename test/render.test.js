@@ -43,15 +43,8 @@ test('the same rules apply to every target size', () => {
   assert.equal(big.width / 2, small.width); assert.equal(big.height / 2, small.height);
 });
 
-test('black becomes transparent under the threshold and fades above it', () => {
-  assert.equal(GSR.knockAlpha(0, 0, 0, 255, 40), 0);
-  assert.equal(GSR.knockAlpha(40, 10, 10, 255, 40), 0);
-  assert.equal(GSR.knockAlpha(60, 0, 0, 255, 40), 128);
-  assert.equal(GSR.knockAlpha(200, 200, 200, 255, 40), 255);
-});
-
 test('defaults are fit, centered, black padding', () => {
-  assert.deepEqual(GSR.defaults(), { mode: 'fit', zoom: 1, dx: 0, dy: 0, rotate: 0, brightness: 0, contrast: 0, bg: '#000000', knock: false, threshold: 40 });
+  assert.deepEqual(GSR.defaults(), { mode: 'fit', zoom: 1, dx: 0, dy: 0, rotate: 0, brightness: 0, contrast: 0, bg: '#000000' });
 });
 
 test('rotate 90 sizes the turned image', () => {
@@ -85,4 +78,19 @@ test('edge color picks the most common border color', () => {
   d.set([255, 0, 0, 255], 0); d.set([255, 255, 255, 255], (1 * w + 1) * 4);
   assert.equal(GSR.edgeColor(d, w, h), '#1428c8');
   assert.equal(GSR.edgeColor(new Uint8ClampedArray(16), 2, 2), '#000000');
+});
+
+test('old settings with removed fields still load, and the fields are ignored', () => {
+  const old = { mode: 'fill', zoom: 1.5, dx: 0.1, dy: 0, bg: '#FFFFFF', knock: true, threshold: 40 };
+  assert.deepEqual(GSR.clean(old), { mode: 'fill', zoom: 1.5, dx: 0.1, dy: 0, rotate: 0, brightness: 0, contrast: 0, bg: '#ffffff' });
+  assert.equal(GSR.clean({ bg: 'transparent' }).bg, '#000000');
+});
+
+test('bad or missing settings fall back to the defaults', () => {
+  assert.deepEqual(GSR.clean(null), GSR.defaults());
+  assert.deepEqual(GSR.clean({ mode: 'x', zoom: 'big', rotate: 45, brightness: 900 }), Object.assign(GSR.defaults(), { brightness: 100 }));
+});
+
+test('editor-only fields never reach a render', () => {
+  assert.deepEqual(Object.keys(GSR.clean({ scale: 0.25, rdx: 1, rdy: 1 })).sort(), Object.keys(GSR.defaults()).sort());
 });

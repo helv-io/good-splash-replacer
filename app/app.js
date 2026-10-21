@@ -48,7 +48,7 @@ function rerender(i) {
   if (rerendering[i.id]) return; rerendering[i.id] = 1;
   loadImg(API + '/img/' + i.id + '/source', function (img) {
     if (!img) return;
-    req('POST', '/api/render?id=' + i.id, { renders: GSR.renderAll(img, st.targets, i.params || GSR.defaults()) }, function () { refresh(true); });
+    req('POST', '/api/render?id=' + i.id, { renders: GSR.renderAll(img, st.targets, GSR.clean(i.params)) }, function () { refresh(true); });
   });
 }
 function refresh(force) {
@@ -69,14 +69,14 @@ function loadToggle() { req('GET', '/api/logo-display', null, function (e, j) { 
 function act(p, msg) { req('POST', p, null, function (e) { toast(e ? e : msg); refresh(true); loadToggle(); }); }
 
 // ---------- editor ----------
-var BGS = [['#000000', 'black'], ['#ffffff', 'white'], ['transparent', 'none']];
+var BGS = [['#000000', 'black'], ['#ffffff', 'white']];
 function openEditor() {
   var it = st && st.items.filter(function (i) { return i.id == sel; })[0];
   if (!it) return toast('pick a logo first');
   if (!it.hasSource) return toast('this logo has no source image');
   loadImg(API + '/img/' + it.id + '/source?' + ver, function (img) {
     if (!img) return toast('cannot load the image');
-    var p = it.params || GSR.defaults(), o = GSR.defaults(); for (var k in p) o[k] = p[k];
+    var o = GSR.clean(it.params);
     ed = { item: it, img: img, o: o }; view = 'editor';
     $('edname').textContent = it.name; $('editor').classList.remove('hidden'); drawEditor();
     document.querySelector('#editor .e').focus();
@@ -87,8 +87,6 @@ function drawEditor() {
   var t = bigTarget(), o = ed.o; GSR.render(ed.img, t.width, t.height, o, $('edcv'));
   var bg = BGS.filter(function (b) { return b[0] == o.bg; })[0];
   $('bgbtn').textContent = 'Background: ' + (bg ? bg[1] : 'custom');
-  $('knockbtn').textContent = 'Black → transparent: ' + (o.knock ? 'on' : 'off');
-  $('thr').textContent = 'Threshold ' + o.threshold;
 }
 function closeOverlay() {
   view = 'main'; ed = null;
@@ -130,9 +128,6 @@ function edAction(a) {
   else if (a == 'up') o.dy -= step; else if (a == 'down') o.dy += step;
   else if (a == 'center') { o.dx = 0; o.dy = 0; }
   else if (a == 'bg') { var i = BGS.map(function (b) { return b[0]; }).indexOf(o.bg); o.bg = BGS[(i + 1) % BGS.length][0]; }
-  else if (a == 'knock') o.knock = !o.knock;
-  else if (a == 'tup') o.threshold = Math.min(160, o.threshold + 5);
-  else if (a == 'tdown') o.threshold = Math.max(5, o.threshold - 5);
   else if (a == 'cancel') return closeOverlay();
   else if (a == 'save' || a == 'saveas') {
     var renders = GSR.renderAll(ed.img, st.targets, o), id = ed.item.id;

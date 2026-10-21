@@ -9,8 +9,7 @@
  *    target size (0 = centered).
  *  - brightness and contrast run from -100 to 100 (0 = unchanged) and touch the
  *    image only, never the padding.
- *  - Padding is opaque bg (black by default). "knock" turns near-black pixels
- *    transparent, with threshold 0-255 on the brightest channel.
+ *  - Padding is opaque bg (black by default). Output is always opaque.
  *  - scale (preview only) draws the same layout on a smaller canvas.
  */
 (function (g) {
@@ -31,13 +30,6 @@
   }
   // Offsets within eps of center snap to 0, so a drag can land exactly centered.
   function snap(v, eps) { return Math.abs(v) < (eps == null ? 0.015 : eps) ? 0 : v; }
-  // Alpha for one pixel when near-black becomes transparent.
-  function knockAlpha(r, g, b, a, t) {
-    var m = Math.max(r, g, b);
-    if (m <= t) return 0;
-    if (m < t * 2) return Math.round(a * (m - t) / t);
-    return a;
-  }
   // One channel after brightness and contrast (-100..100 each).
   function tone(v, br, ct) {
     var c = (ct || 0) * 2.55, f = (259 * (c + 255)) / (255 * (259 - c));
@@ -58,6 +50,16 @@
     for (var y = 1; y < h - 1; y++) { add(0, y); add(w - 1, y); }
     if (!best) return '#000000';
     return hex(Math.round(best[0] / best[3]), Math.round(best[1] / best[3]), Math.round(best[2] / best[3]));
+  }
+  function defaults() { return { mode: 'fit', zoom: 1, dx: 0, dy: 0, rotate: 0, brightness: 0, contrast: 0, bg: '#000000' }; }
+  function color(v) { return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : '#000000'; }
+  function num(v, d, lo, hi) { v = +v; return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
+  // Saved settings, known fields only. Old or unknown fields are ignored and bad values fall back to the defaults,
+  // so settings saved by any version load, and the phone and the TV render the same thing from them.
+  function clean(p) {
+    p = p && typeof p === 'object' ? p : {};
+    return { mode: p.mode === 'fill' ? 'fill' : 'fit', zoom: num(p.zoom, 1, 0.1, 4), dx: num(p.dx, 0, -2, 2), dy: num(p.dy, 0, -2, 2),
+      rotate: rot(p), brightness: num(p.brightness, 0, -100, 100), contrast: num(p.contrast, 0, -100, 100), bg: color(p.bg) };
   }
   function render(img, w, h, o, canvas) {
     o = o || {};
@@ -82,25 +84,20 @@
       for (var i = 0; i < a.length; i += 4) if (a[i + 3]) { a[i] = lut[a[i]]; a[i + 1] = lut[a[i + 1]]; a[i + 2] = lut[a[i + 2]]; }
       lx.putImageData(D, 0, 0);
     }
-    if (o.bg !== 'transparent') { x.fillStyle = o.bg || '#000000'; x.fillRect(0, 0, c.width, c.height); }
+    x.fillStyle = color(o.bg); x.fillRect(0, 0, c.width, c.height);
     x.drawImage(lc, 0, 0);
-    if (o.knock) {
-      var t = o.threshold == null ? 40 : o.threshold, K = x.getImageData(0, 0, c.width, c.height), q = K.data;
-      for (var j = 0; j < q.length; j += 4) q[j + 3] = knockAlpha(q[j], q[j + 1], q[j + 2], q[j + 3], t);
-      x.putImageData(K, 0, 0);
-    }
     return c;
   }
   function b64(c) { return c.toDataURL('image/png').split(',')[1]; }
   // Render one PNG per discovered target: { "LG_logo_4k.png": base64, ... }
   function renderAll(img, targets, o) {
-    var out = {}, p = {}; for (var key in o) p[key] = o[key]; delete p.scale;
+    var out = {}, p = clean(o);
     targets.forEach(function (t) { out[t.file] = b64(render(img, t.width, t.height, p)); });
     return out;
   }
-  var api = { render: render, layout: layout, knockAlpha: knockAlpha, renderAll: renderAll, baseScale: baseScale, b64: b64,
+  var api = { render: render, layout: layout, clean: clean, renderAll: renderAll, baseScale: baseScale, b64: b64,
     snap: snap, tone: tone, edgeColor: edgeColor, turned: turned,
-    defaults: function () { return { mode: 'fit', zoom: 1, dx: 0, dy: 0, rotate: 0, brightness: 0, contrast: 0, bg: '#000000', knock: false, threshold: 40 }; } };
+    defaults: defaults };
   g.GSR = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : this);

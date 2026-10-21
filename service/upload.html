@@ -19,7 +19,6 @@ h1{font-size:19px;letter-spacing:-.01em;margin:0;font-weight:700}h1 b{color:var(
 .bezel{position:relative;background:#050505;border-radius:10px;padding:6px;box-shadow:0 0 0 1px #2b2b33,0 18px 40px -12px #000,0 0 60px -20px var(--glow,#e6007e55);transition:box-shadow .4s var(--ease)}
 .screen{position:relative;aspect-ratio:16/9;border-radius:4px;overflow:hidden;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
 .screen canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.screen.checker{background:repeating-conic-gradient(#1c1c22 0 25%,#111 0 50%) 0 0/16px 16px}
 .stand{width:22%;height:8px;margin:0 auto;background:linear-gradient(#1a1a20,#0d0d10);border-radius:0 0 6px 6px}
 .guide{position:absolute;background:var(--pink2);opacity:0;transition:opacity .15s;pointer-events:none}
 .guide.v{left:50%;top:0;bottom:0;width:1px}.guide.h{top:50%;left:0;right:0;height:1px}.guide.on{opacity:.9}
@@ -61,8 +60,6 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:#1f1f28;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;transition:transform .12s,background .2s}
 .tbtn:active{transform:scale(.96)}.tbtn[aria-pressed=true]{background:#3a1029;border-color:var(--pink)}
-.check{display:flex;align-items:center;gap:10px;font-size:15px;margin-bottom:12px}
-.check input{width:22px;height:22px;accent-color:var(--pink)}
 .txt{width:100%;padding:12px 14px;font-size:16px;border-radius:12px;border:1px solid var(--line);background:#0f0f14}
 .link{background:none;border:0;color:var(--pink2);font-size:15px;padding:8px 0}
 /* Bottom bar */
@@ -135,8 +132,6 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
   <div class="ctl"><label for="zoom">Size <output id="zv">100%</output></label><input id="zoom" type="range" min="10" max="400" value="100"></div>
   <div class="ctl"><label for="br">Brightness <output id="brv">0</output></label><input id="br" type="range" min="-100" max="100" value="0"></div>
   <div class="ctl"><label for="ct">Contrast <output id="ctv">0</output></label><input id="ct" type="range" min="-100" max="100" value="0"></div>
-  <label class="check"><input id="knock" type="checkbox"> Black becomes transparent</label>
-  <div class="ctl" id="thrbox" hidden><label for="thr">Threshold <output id="thv">40</output></label><input id="thr" type="range" min="1" max="160" value="40"></div>
   <div class="ctl"><label for="nm">Name</label><input id="nm" class="txt" type="text" maxlength="40" autocomplete="off"></div>
   <button class="link" id="other">Choose another image</button>
  </div></details>
@@ -178,7 +173,6 @@ function draw() { if (!raf) raf = requestAnimationFrame(paint); }
 function paint() {
   raf = 0;
   var cv = $('cv'), T = big(), wpx = $('screen').clientWidth * dpr;
-  $('screen').classList.toggle('checker', o.bg === 'transparent' || o.knock);
   if (!img) { cv.width = 1; cv.height = 1; return; }
   var p = {}; for (var k in o) p[k] = o[k]; p.scale = wpx / T.width;
   GSR.render(img, T.width, T.height, p, cv);
@@ -186,8 +180,7 @@ function paint() {
   var L = GSR.layout(img.naturalWidth, img.naturalHeight, T.width, T.height, o);
   var native = o.mode === 'fit' && o.zoom === 1 && GSR.baseScale.apply(null, GSR.turned(img.naturalWidth, img.naturalHeight, o).concat([T.width, T.height, 'fit'])) === 1;
   $('chip').textContent = native ? 'Shown at its own size' : Math.round(L.width) + ' x ' + Math.round(L.height) + ' on ' + T.width + ' x ' + T.height;
-  var bc = o.bg === 'transparent' ? '#e6007e' : o.bg;
-  document.querySelector('.bezel').style.setProperty('--glow', bc + '55');
+  document.querySelector('.bezel').style.setProperty('--glow', o.bg + '55');
 }
 window.addEventListener('resize', draw);
 
@@ -247,17 +240,15 @@ function paintRange(r) { r.style.setProperty('--p', ((r.value - r.min) / (r.max 
 range('zoom', 'zv', 'zoom', function (v) { return v / 100; }, function (v) { return v + '%'; });
 range('br', 'brv', 'brightness', function (v) { return v; }, String);
 range('ct', 'ctv', 'contrast', function (v) { return v; }, String);
-range('thr', 'thv', 'threshold', function (v) { return v; }, String);
-$('knock').onchange = function () { o.knock = this.checked; $('thrbox').hidden = !this.checked; draw(); dirty(); };
 $('rot').onclick = function () { o.rotate = ((o.rotate || 0) + 90) % 360; o.dx = 0; o.dy = 0; buzz(); pop(this); draw(); dirty(); };
 $('safe').onclick = function () { var on = !sc.classList.contains('show-safe'); sc.classList.toggle('show-safe', on); this.setAttribute('aria-pressed', String(on)); buzz(); };
 $('reset').onclick = function () { o = GSR.defaults(); edgeFromImage(); setBg('#000000'); sync(); buzz(); draw(); dirty(); };
 $('other').onclick = function () { $('file').click(); };
 function sync() {
   $('mode').dataset.v = o.mode; radio('mode', o.mode);
-  $('zoom').value = o.zoom * 100; $('br').value = o.brightness; $('ct').value = o.contrast; $('thr').value = o.threshold; $('knock').checked = o.knock; $('thrbox').hidden = !o.knock;
-  $('brv').textContent = o.brightness; $('ctv').textContent = o.contrast; $('thv').textContent = o.threshold;
-  ['zoom', 'br', 'ct', 'thr'].forEach(function (i) { paintRange($(i)); });
+  $('zoom').value = o.zoom * 100; $('br').value = o.brightness; $('ct').value = o.contrast;
+  $('brv').textContent = o.brightness; $('ctv').textContent = o.contrast;
+  ['zoom', 'br', 'ct'].forEach(function (i) { paintRange($(i)); });
 }
 sync();
 
@@ -324,7 +315,7 @@ $('send').onclick = function () {
   if (!online) return msg('cannot reach the tv');
   msg(''); setState('busy', 'Preparing'); $('prog').style.width = '8%';
   setTimeout(function () {
-    var p = {}; for (var k in o) if (k !== 'rdx' && k !== 'rdy') p[k] = o[k];
+    var p = GSR.clean(o);
     var body;
     try { body = JSON.stringify({ name: $('nm').value, source: srcB64, params: p, renders: GSR.renderAll(img, targets, p), apply: $('now').checked }); }
     catch (e) { setState('ready'); return msg('this phone ran out of memory, try a smaller image'); }

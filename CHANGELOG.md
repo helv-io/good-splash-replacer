@@ -2,6 +2,12 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- Black becomes transparent, and its threshold. The power-off screen is always opaque, so it did not fit a TV. Logos saved with it still load and the setting is ignored
+
 ## [0.3.0]
 
 ### Added
