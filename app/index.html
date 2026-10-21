@@ -5,13 +5,12 @@
  <section class="top">
   <div class="cur"><div class="lbl">Power-off logo now</div><div class="stage"><img id="curimg" alt=""></div><div id="curname" class="sub"></div></div>
   <div class="side">
-   <div class="pair"><button class="f btn primary" id="apply">Apply</button><button class="f btn" id="restore">Restore LG</button></div>
-   <div class="pair"><button class="f btn" id="edit">Edit</button><button class="f btn" id="report">Report my TV</button></div>
+   <div class="pair"><button class="f btn" id="restore">Restore LG</button><button class="f btn" id="report">Report my TV</button></div>
    <button class="f btn toggle" id="toggle"><span>Show logo at power off</span><i id="tg"></i></button>
    <div class="qrbox"><div id="qr" class="qr"></div><div><div class="lbl">Add a logo</div><div class="sub">Scan with your phone</div><div id="url" class="url"></div></div></div>
   </div>
  </section>
- <section><div class="lbl">Your logos <span class="sub">· red button deletes</span></div><div id="grid"></div></section>
+ <section><div class="lbl">Your logos <span class="sub">· press OK on a logo for options</span></div><div id="grid"></div></section>
 </main>
 <footer>The first logo at power-on comes from the TV's bootloader and can't be changed.</footer>
 
@@ -42,5 +41,14 @@
   <div class="repside"><div id="repqr" class="qr big"></div><div class="sub">Scan to open a GitHub issue with this report</div>
    <button class="r btn" id="repclose">Close</button></div></div>
 </div>
+<div id="menu" class="modal hidden"><div class="card">
+ <h3 id="menuname"></h3>
+ <button class="m btn primary" data-m="apply">Apply</button><button class="m btn" data-m="edit">Edit</button>
+ <button class="m btn" data-m="delete">Delete</button><button class="m btn" data-m="cancel">Cancel</button>
+</div></div>
+<div id="confirm" class="modal hidden"><div class="card">
+ <h3>Delete <span id="confirmname"></span>?</h3>
+ <div class="pair"><button class="c btn" data-c="delete">Delete</button><button class="c btn" data-c="cancel">Cancel</button></div>
+</div></div>
 <div id="toast"></div>
 <script src="app.js"></script></body></html>

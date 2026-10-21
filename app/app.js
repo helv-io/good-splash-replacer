@@ -4,7 +4,7 @@ function readLocal(f) { try { var x = new XMLHttpRequest(); x.open('GET', f, fal
 var CONFIG = readLocal('service/config.json') || { port: 8086 }, APPINFO = readLocal('appinfo.json') || {};
 var API = 'http://127.0.0.1:' + CONFIG.port;
 var st = null, sel = null, ver = 0, bridges = [], restarted = false, rerendering = {};
-var view = 'main', ed = null, pendingDel = null;
+var view = 'main', ed = null, menuId = null;
 
 function $(i) { return document.getElementById(i); }
 function toast(t) { var e = $('toast'); e.textContent = t; e.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(function () { e.style.opacity = 0; }, 2500); }
@@ -88,7 +88,37 @@ function drawEditor() {
   $('knockbtn').textContent = 'Black → transparent: ' + (o.knock ? 'on' : 'off');
   $('thr').textContent = 'Threshold ' + o.threshold;
 }
-function closeOverlay() { view = 'main'; ed = null; $('editor').classList.add('hidden'); $('reportbox').classList.add('hidden'); render(); $('apply').focus(); }
+function closeOverlay() {
+  view = 'main'; ed = null;
+  ['editor', 'reportbox', 'menu', 'confirm'].forEach(function (i) { $(i).classList.add('hidden'); });
+  render(); focusMain();
+}
+function focusMain() {
+  var t = menuId && document.querySelector('.tile[data-id="' + menuId + '"]');
+  (t || document.querySelector('.tile') || $('restore')).focus();
+}
+// ---------- item menu and delete confirmation ----------
+function itemName(id) { var it = st.items.filter(function (i) { return i.id == id; })[0]; return it ? it.name : ''; }
+function openMenu(id) {
+  menuId = id; sel = id; view = 'menu';
+  $('menuname').textContent = itemName(id); $('menu').classList.remove('hidden');
+  document.querySelector('#menu .m').focus();
+}
+function menuAction(a) {
+  var id = menuId;
+  if (a == 'cancel') return closeOverlay();
+  if (a == 'apply') { closeOverlay(); return act('/api/apply?id=' + id, 'Applied'); }
+  if (a == 'edit') { $('menu').classList.add('hidden'); view = 'main'; return openEditor(); }
+  if (a == 'delete') {
+    $('menu').classList.add('hidden'); view = 'confirm';
+    $('confirmname').textContent = itemName(id); $('confirm').classList.remove('hidden');
+    document.querySelector('#confirm [data-c="cancel"]').focus();
+  }
+}
+function confirmAction(c) {
+  var id = menuId; closeOverlay();
+  if (c == 'delete') { menuId = null; act('/api/delete?id=' + id, 'Deleted'); }
+}
 function edAction(a) {
   var o = ed.o, step = 0.02;
   if (a == 'fit' || a == 'fill') { o.mode = a; o.zoom = 1; o.dx = 0; o.dy = 0; }
@@ -132,17 +162,17 @@ function exitApp() {
 }
 function activate(el) {
   if (!el) return;
-  if (el.id == 'apply') { if (!sel) return toast('pick a logo first'); act('/api/apply?id=' + sel, 'Applied'); }
-  else if (el.id == 'restore') act('/api/restore', 'LG logo restored');
+  if (el.id == 'restore') act('/api/restore', 'LG logo restored');
   else if (el.id == 'toggle') act('/api/logo-display?value=' + ($('tg').className == 'on' ? 'off' : 'on'), 'Saved');
-  else if (el.id == 'edit') openEditor();
   else if (el.id == 'report') openReport();
   else if (el.id == 'repclose') closeOverlay();
   else if (el.dataset.a) edAction(el.dataset.a);
-  else if (el.dataset.id) { sel = el.dataset.id; render(); }
+  else if (el.dataset.m) menuAction(el.dataset.m);
+  else if (el.dataset.c) confirmAction(el.dataset.c);
+  else if (el.dataset.id) openMenu(el.dataset.id);
 }
 function focusables() {
-  var q = view == 'editor' ? '#editor .e' : view == 'report' ? '#reportbox .r' : '.f,.tile';
+  var q = { editor: '#editor .e', report: '#reportbox .r', menu: '#menu .m', confirm: '#confirm .c' }[view] || '.f,.tile';
   return [].slice.call(document.querySelectorAll(q));
 }
 function move(dx, dy) {
@@ -162,13 +192,9 @@ document.addEventListener('keydown', function (e) {
   var k = e.keyCode, a = document.activeElement;
   if (k == 37) move(-1, 0); else if (k == 39) move(1, 0); else if (k == 38) move(0, -1); else if (k == 40) move(0, 1);
   else if (k == 13) activate(a);
-  else if ((k == 403 || k == 46) && view == 'main' && a && a.dataset.id) {
-    if (pendingDel == a.dataset.id) { act('/api/delete?id=' + pendingDel, 'Deleted'); pendingDel = null; }
-    else { pendingDel = a.dataset.id; toast('Press red again to delete'); }
-  }
   else if (k == 461 || k == 8 || k == 27) { e.preventDefault(); if (view != 'main') closeOverlay(); else exitApp(); return; }
   else return;
   e.preventDefault();
 });
 refresh(true); loadToggle(); setInterval(refresh, 2000);
-setTimeout(function () { $('apply').focus(); }, 300);
+setTimeout(focusMain, 300);

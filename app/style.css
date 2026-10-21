@@ -39,3 +39,7 @@ footer{position:absolute;bottom:30px;left:80px;font-size:22px;color:#666}
 .rep pre{flex:1;height:820px;margin:0;overflow:hidden;white-space:pre-wrap;word-break:break-all;font-size:21px;line-height:1.35;background:#141418;border-radius:14px;padding:24px;color:#ccc}
 .repside{width:360px;display:flex;flex-direction:column;gap:20px}
 #toast{position:absolute;bottom:90px;right:80px;background:#e6007e;color:#fff;font-size:28px;padding:16px 28px;border-radius:12px;opacity:0;transition:.3s}
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center}
+.modal.hidden{display:none}
+.card{background:#16161a;border:2px solid #333;border-radius:20px;padding:40px;width:640px;display:flex;flex-direction:column;gap:18px}
+.card h3{margin:0 0 8px;font-size:36px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

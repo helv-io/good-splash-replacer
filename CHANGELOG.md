@@ -2,6 +2,12 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1]
+
+### Changed
+
+- No color buttons needed: OK on a logo opens Apply, Edit, Delete and Cancel. Delete asks first with Cancel focused. Back closes the menu or dialog, then exits
+
 ## [0.2.0]
 
 ### Added
