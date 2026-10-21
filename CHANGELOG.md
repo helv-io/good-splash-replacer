@@ -2,6 +2,12 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1]
+
+### Fixed
+
+- The ipk now carries usr/palm/packages/io.helv.goodsplash/packageinfo.json, like packages from the webOS packagers. Without it the Homebrew Channel compatibility check could not open the package
+
 ## [0.4.0]
 
 ### Changed
