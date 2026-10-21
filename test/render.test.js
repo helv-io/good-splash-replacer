@@ -51,5 +51,38 @@ test('black becomes transparent under the threshold and fades above it', () => {
 });
 
 test('defaults are fit, centered, black padding', () => {
-  assert.deepEqual(GSR.defaults(), { mode: 'fit', zoom: 1, dx: 0, dy: 0, bg: '#000000', knock: false, threshold: 40 });
+  assert.deepEqual(GSR.defaults(), { mode: 'fit', zoom: 1, dx: 0, dy: 0, rotate: 0, brightness: 0, contrast: 0, bg: '#000000', knock: false, threshold: 40 });
+});
+
+test('rotate 90 sizes the turned image', () => {
+  assert.deepEqual(GSR.layout(400, 1000, 1000, 500, { rotate: 90 }), GSR.layout(1000, 400, 1000, 500, {}));
+  assert.deepEqual(GSR.layout(400, 1000, 1000, 500, { rotate: 180 }), GSR.layout(400, 1000, 1000, 500, {}));
+  assert.deepEqual(GSR.layout(400, 1000, 1000, 500, { rotate: -90 }), GSR.layout(1000, 400, 1000, 500, {}));
+});
+
+test('a smaller turned image still stays at its own size', () => {
+  assert.deepEqual(GSR.layout(100, 300, 3840, 2160, { rotate: 270 }), { x: 1770, y: 1030, width: 300, height: 100 });
+});
+
+test('the preview scale never changes the layout', () => {
+  const full = GSR.layout(5000, 1000, 3840, 2160, { zoom: 1.3, dx: 0.1 }), again = GSR.layout(5000, 1000, 3840, 2160, { zoom: 1.3, dx: 0.1, scale: 0.1 });
+  assert.deepEqual(full, again);
+});
+
+test('offsets near center snap to it', () => {
+  assert.equal(GSR.snap(0.01), 0); assert.equal(GSR.snap(-0.01), 0); assert.equal(GSR.snap(0.2), 0.2); assert.equal(GSR.snap(0.05, 0.1), 0);
+});
+
+test('tone is a no-op at zero and clamps', () => {
+  for (let v = 0; v < 256; v += 17) assert.equal(GSR.tone(v, 0, 0), v);
+  assert.equal(GSR.tone(250, 100, 0), 255); assert.equal(GSR.tone(5, -100, 0), 0);
+  assert.ok(GSR.tone(200, 0, 50) > 200); assert.ok(GSR.tone(50, 0, 50) < 50);
+});
+
+test('edge color picks the most common border color', () => {
+  const w = 4, h = 3, d = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) d.set([20, 40, 200, 255], i * 4);
+  d.set([255, 0, 0, 255], 0); d.set([255, 255, 255, 255], (1 * w + 1) * 4);
+  assert.equal(GSR.edgeColor(d, w, h), '#1428c8');
+  assert.equal(GSR.edgeColor(new Uint8ClampedArray(16), 2, 2), '#000000');
 });
