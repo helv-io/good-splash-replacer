@@ -100,12 +100,29 @@ test('upload, apply, restore and delete round-trip', async () => {
   assert.equal(it.name, 'My blogob'); assert.ok(it.hasSource);
   assert.equal((await call('POST', '/api/apply?id=' + id)).status, 200);
   assert.equal((await call('GET', '/api/state')).body.current, id);
-  assert.ok(fs.existsSync(path.join(base, 'masterbrand', 'LG_logo_4k.png')));
+  assert.equal(S.readActive().length, 2);
   assert.equal((await call('POST', '/api/restore')).status, 200);
   assert.equal((await call('GET', '/api/state')).body.current, 'lg');
-  assert.ok(!fs.existsSync(path.join(base, 'masterbrand', 'LG_logo_4k.png')));
+  assert.deepEqual(S.readActive(), []);
+  assert.deepEqual(fs.readdirSync(path.join(base, 'masterbrand')).filter(f => f.endsWith('.png')), []);
   assert.equal((await call('POST', '/api/delete?id=' + id)).status, 200);
   assert.ok(!(await call('GET', '/api/state')).body.items.some(i => i.id === id));
+});
+
+test('apply never rewrites a mounted file and mounts each target once', async () => {
+  const mb = path.join(base, 'masterbrand');
+  assert.equal((await call('POST', '/api/apply?id=helvio')).status, 200);
+  const first = S.readActive().map(r => r[1]);
+  assert.equal((await call('POST', '/api/apply?id=helvio')).status, 200);
+  const second = S.readActive().map(r => r[1]);
+  assert.equal(second.length, 2);
+  for (const f of second) assert.ok(!first.includes(f), 'a new file per apply');
+  for (const f of first) assert.ok(!fs.existsSync(f), 'old files are removed');
+  // one dry-mount marker per target: mounted once, never stacked
+  for (const [target, file] of S.readActive()) assert.equal(fs.readFileSync(target + '.gsr-dry', 'utf8'), file);
+  assert.deepEqual(fs.readdirSync(mb).filter(f => f.endsWith('.png')).sort(), second.map(f => path.basename(f)).sort());
+  assert.equal((await call('POST', '/api/restore')).status, 200);
+  assert.ok(!fs.readdirSync(qmlDir).some(f => f.endsWith('.gsr-dry')));
 });
 
 test('save as new copies the source of the item it came from', async () => {
@@ -129,4 +146,15 @@ test('the issue link uses the form template, the label and no address', () => {
   assert.equal(u.searchParams.get('labels'), 'tv-report');
   assert.match(u.searchParams.get('report'), /Model: M/);
   assert.doesNotMatch(S.reportText(r), /\b\d+\.\d+\.\d+\.\d+\b/);
+});
+
+test('the service exits cleanly on SIGTERM', async () => {
+  const { spawn } = require('child_process');
+  const b2 = fs.mkdtempSync(path.join(os.tmpdir(), 'gsr-sig-'));
+  const env = Object.assign({}, process.env, { GSR_BASE: b2, GSR_PORT: '0' });
+  const p = spawn(process.execPath, [path.join(__dirname, '..', 'service', 'server.js')], { env, stdio: 'ignore' });
+  await new Promise(r => setTimeout(r, 400));
+  const code = await new Promise(r => { p.on('exit', (c, sig) => r(c === null ? sig : c)); p.kill('SIGTERM'); });
+  fs.rmSync(b2, { recursive: true, force: true });
+  assert.equal(code, 0);
 });

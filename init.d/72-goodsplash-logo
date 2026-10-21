@@ -1,0 +1,10 @@
+#!/bin/sh
+# Re-apply the Good Splash Replacer logo at boot. Replays masterbrand/active ("<target> <file>" per line):
+# one bind mount per target, only when the target is not mounted yet. No file is written.
+A=/mnt/lg/user/custom-logo/masterbrand/active
+[ -f "$A" ] || exit 0
+while read -r target file; do
+  [ -f "$file" ] && [ -f "$target" ] || continue
+  grep -q " $target " /proc/mounts && continue
+  mount --bind "$file" "$target"
+done < "$A"

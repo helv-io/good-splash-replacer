@@ -1,7 +1,7 @@
 #!/bin/bash
 # The checks every commit must pass, the same ones CI runs: syntax, unit tests (a skipped test fails), the ipk build.
 set -euo pipefail
-cd "$(git rev-parse --show-toplevel 2>/dev/null || dirname "$0")/."
+cd "$(dirname "$0")/.."
 for f in app/*.js service/*.js tools/*.js test/*.js; do
   case "$f" in app/qrcode.js) continue;; esac
   node --check "$f"

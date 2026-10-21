@@ -17,7 +17,8 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 ### Fixed
 
 - Back exits the app, and closes the editor or the report first
-- The service restarts when the app is reinstalled with another version
+- The service restarts when the app is reinstalled with another version, and exits cleanly on SIGTERM
+- Apply never writes to a mounted file and mounts each target once
 
 ## [0.1.0]
 

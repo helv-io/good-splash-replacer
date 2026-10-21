@@ -29,23 +29,12 @@ scp io.helv.goodsplash_<version>_all.ipk root@TV:/tmp/
 ssh root@TV 'luna-send -n 1 luna://com.webos.appInstallService/dev/install "{\"id\":\"io.helv.goodsplash\",\"ipkUrl\":\"/tmp/io.helv.goodsplash_<version>_all.ipk\",\"subscribe\":true}"'
 ```
 
-To keep the logo after a reboot, add the two startup scripts to `/var/lib/webosbrew/init.d/`: `init.d/73-goodsplash` starts the service, and a script like the one below re-applies the logo.
-
-```sh
-#!/bin/sh
-# 72-masterbrand-logo: re-apply the bind mounts when Good Splash Replacer has a logo applied
-SRC=/mnt/lg/user/custom-logo/masterbrand
-DST=/usr/lib/qml/MasterBrand
-for f in "$SRC"/LG_logo_*.png; do
-  [ -f "$f" ] || continue
-  grep -q " $DST/$(basename "$f") " /proc/mounts || mount --bind "$f" "$DST/$(basename "$f")"
-done
-```
+To keep the logo after a reboot, copy both startup scripts to `/var/lib/webosbrew/init.d/`: `init.d/73-goodsplash` starts the service and `init.d/72-goodsplash-logo` re-applies the logo.
 
 ## How it works
 
 - The power-off screen is the `com.webos.app.masterbrand` QML app. The service reads `MasterBrand.qml`, finds the logo files it uses, such as `LG_logo_4k.png` and `LG_logo_2k.png`, and reads their pixel sizes. Every logo is rendered once per file at exactly that size.
-- Apply copies the rendered files to `/mnt/lg/user/custom-logo/masterbrand/` and bind-mounts them over the stock files. Restore LG unmounts them and deletes the copies.
+- Apply writes new files to `/mnt/lg/user/custom-logo/masterbrand/` and bind-mounts each one over its stock file: one unmount, one mount, never stacked, and a mounted file is never written. Restore LG unmounts them and deletes the copies.
 - The switch maps to the TV's own `lgLogoDisplay` setting.
 - The service runs as root on port 8086, set in `service/config.json`. It accepts connections from the local network only. Phones can send logos; apply, restore, delete and the switch work from the TV only.
 

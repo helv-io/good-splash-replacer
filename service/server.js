@@ -131,25 +131,55 @@ function current() {
   const items = list();
   try { const id = fs.readFileSync(path.join(MB, 'source'), 'utf8').trim(); if (items.some(i => i.id === id)) return id; } catch (e) {}
   try {
-    const live = fs.readFileSync(path.join(MB, ts[0].file));
+    const row = readActive().find(r => r[0] === ts[0].path);
+    const live = fs.readFileSync(row ? row[1] : path.join(MB, ts[0].file));
     for (const i of items) { const f = path.join(LIB, i.id, ts[0].file); if (fs.existsSync(f) && live.equals(fs.readFileSync(f))) { fs.writeFileSync(path.join(MB, 'source'), i.id); return i.id; } }
   } catch (e) {}
   return 'custom';
 }
+// Mounts are recorded in masterbrand/active as "<target path> <file>" lines; init.d/72-goodsplash-logo replays them at boot.
 function bind(src, dst) { if (DRY) fs.writeFileSync(dst + '.gsr-dry', src); else execFileSync('mount', ['--bind', src, dst]); }
-function unbind(dst) { if (!mounted(dst)) return; if (DRY) fs.unlinkSync(dst + '.gsr-dry'); else execFileSync('umount', [dst]); }
+// Unmount until the target shows the stock file again; a correct setup needs exactly one umount.
+function unbind(dst) {
+  for (let i = 0; i < 5 && mounted(dst); i++) { if (DRY) fs.unlinkSync(dst + '.gsr-dry'); else execFileSync('umount', [dst]); }
+  if (mounted(dst)) throw new Error('cannot unmount ' + path.basename(dst));
+}
+function readActive() {
+  try { return fs.readFileSync(path.join(MB, 'active'), 'utf8').split('\n').filter(Boolean).map(l => l.split(' ')); } catch (e) { return []; }
+}
+function writeActive(rows) {
+  const tmp = path.join(MB, 'active.tmp');
+  fs.writeFileSync(tmp, rows.map(r => r.join(' ')).join('\n') + (rows.length ? '\n' : ''));
+  fs.renameSync(tmp, path.join(MB, 'active'));
+}
+// Delete files in masterbrand/ that no mount uses any more.
+function prune(keep) {
+  for (const f of fs.readdirSync(MB)) if (/\.png$/.test(f) && !keep.includes(path.join(MB, f))) try { fs.unlinkSync(path.join(MB, f)); } catch (e) {}
+}
+// Never writes to a mounted file: each apply writes new versioned files, then per target one umount and one bind.
 function apply(id) {
   const ts = targets(), dir = path.join(LIB, id);
   if (!ts.length || !ts[0].path) throw new Error('no logo files found on this tv');
   if (!fs.existsSync(dir)) throw new Error('unknown logo');
   const item = list().find(i => i.id === id);
   if (item.missing.length) throw new Error('logo needs a re-render for this tv');
-  for (const t of ts) { unbind(t.path); fs.copyFileSync(path.join(dir, t.file), path.join(MB, t.file)); bind(path.join(MB, t.file), t.path); }
+  const stamp = Date.now().toString(36), rows = [];
+  for (const t of ts) {
+    const dst = path.join(MB, id + '.' + stamp + '.' + t.file);
+    fs.copyFileSync(path.join(dir, t.file), dst);
+    rows.push([t.path, dst]);
+  }
+  for (const [target, file] of rows) { unbind(target); bind(file, target); }
+  writeActive(rows);
   fs.writeFileSync(path.join(MB, 'source'), id);
+  prune(rows.map(r => r[1]));
 }
 function restore() {
-  for (const t of targets()) { if (t.path) unbind(t.path); try { fs.unlinkSync(path.join(MB, t.file)); } catch (e) {} }
+  for (const t of targets()) if (t.path) unbind(t.path);
+  for (const [target] of readActive()) unbind(target);
+  writeActive([]);
   try { fs.unlinkSync(path.join(MB, 'source')); } catch (e) {}
+  prune([]);
 }
 function saveItem(id, body, isNew) {
   const r = validateRenders(body.renders, targets());
@@ -261,7 +291,11 @@ function handler(req, res) {
       if (!f || !fs.existsSync(f)) return send(res, 404, { error: 'not found' });
       return send(res, 200, fs.readFileSync(f), { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' }[sniffImage(fs.readFileSync(f).subarray(0, 12))] || 'application/octet-stream');
     }
-    if (M === 'GET' && p === '/current.png') { const t = targets()[0]; return t && t.path ? send(res, 200, fs.readFileSync(t.path), 'image/png') : send(res, 404, { error: 'no logo' }); }
+    if (M === 'GET' && p === '/current.png') {
+      const t = targets()[0]; if (!t || !t.path) return send(res, 404, { error: 'no logo' });
+      const row = readActive().find(r => r[0] === t.path);
+      return send(res, 200, fs.readFileSync(row && mounted(t.path) ? row[1] : t.path), 'image/png');
+    }
     if (M === 'GET' && p === '/api/report') return report().then(r => send(res, 200, Object.assign(r, { text: reportText(r), issueUrl: issueURL(r) })), fail);
     if (M === 'GET' && p === '/report') return report().then(r => send(res, 200, reportPage(r), 'text/html; charset=utf-8'), fail);
     if (M === 'POST' && p === '/api/upload') return readJSON(req, j => {
@@ -301,6 +335,11 @@ function start() {
   if (!process.env.GSR_BASE) { try { fs.writeFileSync('/tmp/goodsplash.pid', String(process.pid)); fs.writeFileSync('/tmp/goodsplash.ver', APP_VERSION); } catch (e) {} }
   return srv;
 }
+// Exit cleanly on SIGTERM or SIGINT: stop accepting, drop open sockets, exit. No file is held open between requests.
+function onSignals(srv) {
+  const stop = () => { try { srv.close(); } catch (e) {} if (srv.closeAllConnections) srv.closeAllConnections(); setTimeout(() => process.exit(0), 200).unref(); };
+  process.once('SIGTERM', stop); process.once('SIGINT', stop);
+}
 
-module.exports = { pngDims, sniffImage, isLan, isLocal, qmlLogoFiles, validateRenders, cleanName, cleanId, reportText, issueURL, start, handler, KNOWN };
-if (require.main === module) start();
+module.exports = { readActive, pngDims, sniffImage, isLan, isLocal, qmlLogoFiles, validateRenders, cleanName, cleanId, reportText, issueURL, start, handler, KNOWN };
+if (require.main === module) onSignals(start());
