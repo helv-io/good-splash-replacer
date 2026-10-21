@@ -1,106 +1,341 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0f">
 <title>Good Splash Replacer</title>
 <style>
-:root{--pink:#e6007e}
-*{box-sizing:border-box}
-body{margin:0 auto;font-family:system-ui,sans-serif;background:#111;color:#eee;padding:20px;max-width:560px}
-h1{font-size:22px;margin:0 0 4px}h1 b{color:var(--pink)}
-p{color:#aaa;margin:4px 0 16px}
-.btn{display:block;width:100%;padding:18px;font-size:18px;border:0;border-radius:12px;margin-top:14px;background:var(--pink);color:#fff;font-weight:600}
-.btn.pick{background:#2a2a2a}.btn:disabled{opacity:.4}
-.prev{margin-top:14px}
-.prev figure{margin:0 0 10px}
-.prev canvas{width:100%;height:auto;display:block;border-radius:10px;border:1px solid #333;
- background-image:linear-gradient(45deg,#1a1a1a 25%,transparent 25%,transparent 75%,#1a1a1a 75%),linear-gradient(45deg,#1a1a1a 25%,transparent 25%,transparent 75%,#1a1a1a 75%);
- background-size:16px 16px;background-position:0 0,8px 8px;background-color:#000}
-figcaption{font-size:13px;color:#888;margin-top:4px}
-details{margin-top:16px;background:#1a1a1a;border-radius:12px;padding:4px 14px}
-summary{padding:12px 0;font-size:17px;cursor:pointer}
-label{display:block;margin:12px 0 6px;color:#ccc;font-size:15px}
-input[type=range]{width:100%}
-input[type=text]{width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #444;background:#111;color:#fff}
-.seg{display:flex;gap:8px}.seg button{flex:1;padding:12px;border-radius:8px;border:1px solid #444;background:#111;color:#eee;font-size:16px}
-.seg button.on{background:var(--pink);border-color:var(--pink);color:#fff}
-.row{display:flex;gap:10px;align-items:center}.row input[type=color]{width:52px;height:40px;border:0;background:none}
-#msg{margin-top:14px;min-height:22px}
-.hidden{display:none}
+:root{--pink:#e6007e;--pink2:#ff3fa4;--bg:#0b0b0f;--card:#16161d;--line:#2a2a35;--mute:#8b8b99;--text:#f2f2f5;--r:16px;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;max-width:560px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--pink2);outline-offset:2px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+h1{font-size:19px;letter-spacing:-.01em;margin:0;font-weight:700}h1 b{color:var(--pink)}
+.tv-state{font-size:13px;color:var(--mute);display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#555}.dot.ok{background:#2ecc71;box-shadow:0 0 8px #2ecc7188}.dot.bad{background:#e74c3c}
+/* TV frame */
+.tv{position:relative;margin:4px 0 22px}
+.bezel{position:relative;background:#050505;border-radius:10px;padding:6px;box-shadow:0 0 0 1px #2b2b33,0 18px 40px -12px #000,0 0 60px -20px var(--glow,#e6007e55);transition:box-shadow .4s var(--ease)}
+.screen{position:relative;aspect-ratio:16/9;border-radius:4px;overflow:hidden;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
+.screen canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.screen.checker{background:repeating-conic-gradient(#1c1c22 0 25%,#111 0 50%) 0 0/16px 16px}
+.stand{width:22%;height:8px;margin:0 auto;background:linear-gradient(#1a1a20,#0d0d10);border-radius:0 0 6px 6px}
+.guide{position:absolute;background:var(--pink2);opacity:0;transition:opacity .15s;pointer-events:none}
+.guide.v{left:50%;top:0;bottom:0;width:1px}.guide.h{top:50%;left:0;right:0;height:1px}.guide.on{opacity:.9}
+.safe{position:absolute;pointer-events:none;border:1px dashed #ffffff88;opacity:0;transition:opacity .2s}
+.safe.a{inset:5%}.safe.t{inset:10%;border-color:#ffd54a99}.show-safe .safe{opacity:1}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--mute);font-size:15px;text-align:center;padding:16px}
+.empty svg{opacity:.6}
+.chip{position:absolute;left:10px;top:10px;font-size:12px;background:#000a;backdrop-filter:blur(6px);padding:4px 9px;border-radius:99px;color:#ddd;pointer-events:none;transition:opacity .3s}
+.hint{font-size:13px;color:var(--mute);text-align:center;margin:-12px 0 16px;min-height:18px}
+/* Controls */
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}
+.seg button{position:relative;z-index:1;border:0;background:none;padding:13px 0;font-size:17px;font-weight:600;color:var(--mute);transition:color .25s}
+.seg button[aria-checked=true]{color:#fff}
+.seg .pill{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);background:var(--pink);border-radius:10px;transition:transform .3s var(--ease);box-shadow:0 4px 14px -4px var(--pink)}
+.seg[data-v=fill] .pill{transform:translateX(100%)}
+.seg small{display:block;font-size:11px;font-weight:500;opacity:.75}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.row .lbl{font-size:14px;color:var(--mute);min-width:84px}
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw button,.sw label{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);padding:0;position:relative;transition:transform .15s var(--ease),border-color .2s;display:block}
+.sw [aria-checked=true]{border-color:#fff;transform:scale(1.08)}
+.sw button:active,.sw label:active{transform:scale(.92)}
+.sw .auto{background:conic-gradient(#e6007e,#ffb300,#2ecc71,#3498db,#9b59b6,#e6007e)}
+.sw .auto i{position:absolute;inset:7px;border-radius:50%;background:var(--c,#000)}
+.sw .cust{background:conic-gradient(from 90deg,#f44,#ff4,#4f4,#4ff,#44f,#f4f,#f44);overflow:hidden}
+.sw .cust input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0}
+details{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+summary{list-style:none;padding:15px 16px;font-weight:600;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"";width:9px;height:9px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);transition:transform .25s var(--ease)}
+details[open] summary:after{transform:rotate(-135deg)}
+.adj{padding:0 16px 16px}
+.ctl{margin-bottom:16px}.ctl label{display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin-bottom:8px}.ctl label output{color:var(--text);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:none;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--pink),var(--pink)) 0/var(--p,50%) 100% no-repeat,#33333f}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-10px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0008}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#33333f}input[type=range]::-moz-range-progress{height:4px;background:var(--pink)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:#fff}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.tbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:#1f1f28;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;transition:transform .12s,background .2s}
+.tbtn:active{transform:scale(.96)}.tbtn[aria-pressed=true]{background:#3a1029;border-color:var(--pink)}
+.check{display:flex;align-items:center;gap:10px;font-size:15px;margin-bottom:12px}
+.check input{width:22px;height:22px;accent-color:var(--pink)}
+.txt{width:100%;padding:12px 14px;font-size:16px;border-radius:12px;border:1px solid var(--line);background:#0f0f14}
+.link{background:none;border:0;color:var(--pink2);font-size:15px;padding:8px 0}
+/* Bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%);z-index:5}
+.bar .in{max-width:528px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.bar .opts{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--mute)}
+.toggle{display:flex;align-items:center;gap:8px}
+.toggle input{appearance:none;-webkit-appearance:none;width:42px;height:26px;border-radius:13px;background:#33333f;position:relative;transition:background .2s;margin:0}
+.toggle input:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .25s var(--ease)}
+.toggle input:checked{background:var(--pink)}.toggle input:checked:after{transform:translateX(16px)}
+.main{position:relative;overflow:hidden;width:100%;border:0;border-radius:16px;padding:17px;font-size:18px;font-weight:700;background:var(--pink);color:#fff;box-shadow:0 10px 30px -10px var(--pink);transition:transform .12s,background .3s,opacity .2s}
+.main:active{transform:scale(.98)}.main:disabled{opacity:.6}
+.main.alt{background:#24242e;box-shadow:none}
+.main .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffffff33;transition:width .2s}
+.main.done{background:#1f9d55;box-shadow:0 10px 30px -10px #1f9d55}
+.main span{position:relative}
+#msg{font-size:14px;text-align:center;color:#ff8a8a;min-height:0}
+#msg:empty{display:none}
+/* Full size */
+#full{position:fixed;inset:0;background:#000;z-index:10;display:none;flex-direction:column}
+#full.on{display:flex;animation:fade .25s var(--ease)}
+#full .top{display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;font-size:14px;color:var(--mute)}
+#full .scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+#full img{display:block;max-width:none}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
+.pop{animation:pop .35s var(--ease)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+[hidden]{display:none!important}
 </style></head><body>
-<h1><b>Good</b> Splash Replacer</h1>
-<p>Pick an image. It shows on black when the TV turns off.</p>
-<input id="file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-<button class="btn pick" id="pick">Choose image</button>
-<div id="prev" class="prev"></div>
-<button class="btn hidden" id="send">Send to TV</button>
-<details id="adjust" class="hidden"><summary>Adjust</summary>
- <label>Mode</label><div class="seg" id="mode"><button data-v="fit" class="on">Fit</button><button data-v="fill">Fill</button></div>
- <label>Size <span id="zv">100%</span></label><input id="zoom" type="range" min="20" max="300" value="100">
- <label>Move sideways</label><input id="dx" type="range" min="-50" max="50" value="0">
- <label>Move up or down</label><input id="dy" type="range" min="-50" max="50" value="0">
- <label>Background</label><div class="seg" id="bg"><button data-v="#000000" class="on">Black</button><button data-v="#ffffff">White</button><button data-v="transparent">None</button></div>
- <div class="row"><label>Custom</label><input id="bgc" type="color" value="#000000"></div>
- <label><input id="knock" type="checkbox"> Black becomes transparent</label>
- <label>Threshold <span id="tv">40</span></label><input id="thr" type="range" min="1" max="160" value="40">
- <label>Name</label><input id="nm" type="text" maxlength="40">
- <button class="btn pick" id="reset">Reset</button>
-</details>
-<div id="msg"></div>
+<header><h1><b>Good</b> Splash</h1><div class="tv-state" aria-live="polite"><span class="dot" id="dot"></span><span id="tvs">Connecting</span></div></header>
+
+<div class="tv">
+ <div class="bezel"><div class="screen" id="screen" role="img" aria-label="Preview of the TV power-off screen">
+  <canvas id="cv"></canvas>
+  <div class="guide v" id="gv"></div><div class="guide h" id="gh"></div>
+  <div class="safe a"></div><div class="safe t"></div>
+  <div class="chip" id="chip" hidden></div>
+  <button class="empty" id="empty" style="border:0;background:none;width:100%">
+   <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="m3 15 5-5 4 4 3-3 6 6"/><circle cx="15.5" cy="8.5" r="1.5"/></svg>
+   <span>Tap to choose an image<br><small>It shows when the TV turns off</small></span>
+  </button>
+ </div></div>
+ <div class="stand"></div>
+</div>
+<p class="hint" id="hint"></p>
+
+<input id="file" type="file" accept="image/*" hidden>
+<div id="ed" hidden>
+ <div class="seg" id="mode" role="radiogroup" aria-label="Sizing" data-v="fit"><span class="pill"></span>
+  <button role="radio" aria-checked="true" data-v="fit">Fit<small>whole image</small></button>
+  <button role="radio" aria-checked="false" data-v="fill">Fill<small>whole screen</small></button>
+ </div>
+ <div class="row"><span class="lbl" id="bgl">Background</span>
+  <div class="sw" id="bg" role="radiogroup" aria-labelledby="bgl">
+   <button role="radio" aria-checked="true" data-v="#000000" style="background:#000" aria-label="Black"></button>
+   <button role="radio" aria-checked="false" data-v="auto" class="auto" aria-label="Match the image edge"><i></i></button>
+   <button role="radio" aria-checked="false" data-v="#ffffff" style="background:#fff" aria-label="White"></button>
+   <label role="radio" aria-checked="false" data-v="custom" class="cust" aria-label="Custom color"><input id="bgc" type="color" value="#203040"></label>
+  </div>
+ </div>
+ <details id="adjust"><summary>Adjust</summary><div class="adj">
+  <div class="tools">
+   <button class="tbtn" id="rot" aria-label="Rotate 90 degrees"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rotate</button>
+   <button class="tbtn" id="safe" aria-pressed="false">Safe area</button>
+   <button class="tbtn" id="fullbtn">Actual size</button>
+   <button class="tbtn" id="reset">Reset</button>
+  </div>
+  <div class="ctl"><label for="zoom">Size <output id="zv">100%</output></label><input id="zoom" type="range" min="10" max="400" value="100"></div>
+  <div class="ctl"><label for="br">Brightness <output id="brv">0</output></label><input id="br" type="range" min="-100" max="100" value="0"></div>
+  <div class="ctl"><label for="ct">Contrast <output id="ctv">0</output></label><input id="ct" type="range" min="-100" max="100" value="0"></div>
+  <label class="check"><input id="knock" type="checkbox"> Black becomes transparent</label>
+  <div class="ctl" id="thrbox" hidden><label for="thr">Threshold <output id="thv">40</output></label><input id="thr" type="range" min="1" max="160" value="40"></div>
+  <div class="ctl"><label for="nm">Name</label><input id="nm" class="txt" type="text" maxlength="40" autocomplete="off"></div>
+  <button class="link" id="other">Choose another image</button>
+ </div></details>
+</div>
+
+<div class="bar"><div class="in">
+ <div id="msg" role="alert"></div>
+ <div class="opts" id="opts" hidden><label class="toggle"><input id="now" type="checkbox"> Apply now</label><span id="size"></span></div>
+ <button class="main" id="send"><span class="fill" id="prog"></span><span id="sendt">Choose image</span></button>
+</div></div>
+
+<div id="full" role="dialog" aria-label="Actual size"><div class="top"><span id="fullcap"></span><button class="link" id="fullx">Done</button></div><div class="scroll"><img id="fullimg" alt="Rendered logo at full size"></div></div>
+
 <script src="/render.js"></script>
 <script>
+(function () {
 var $ = function (i) { return document.getElementById(i); };
-var img = null, srcB64 = null, targets = [], o = GSR.defaults();
-function msg(t) { $('msg').textContent = t; }
-fetch('/api/state').then(function (r) { return r.json(); }).then(function (s) {
-  targets = s.targets.slice().sort(function (a, b) { return b.width - a.width; });
-  if (!targets.length) msg('this tv has no power-off logo to replace');
-}).catch(function () { msg('cannot reach the tv'); });
-function draw() {
-  $('zv').textContent = Math.round(o.zoom * 100) + '%'; $('tv').textContent = o.threshold;
-  var box = $('prev'); box.innerHTML = '';
+var img = null, srcB64 = null, targets = [], o = GSR.defaults(), bgPick = '#000000', edge = '#000000', state = 'pick', online = false, dpr = Math.min(window.devicePixelRatio || 1, 2);
+var big = function () { return targets[0] || { width: 3840, height: 2160 }; };
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms || 8); } catch (e) {} }
+function msg(t) { $('msg').textContent = t || ''; }
+function pop(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+
+// ---------- TV ----------
+function poll() {
+  fetch('/api/state').then(function (r) { return r.json(); }).then(function (s) {
+    targets = s.targets.slice().sort(function (a, b) { return b.width - a.width; });
+    online = targets.length > 0;
+    $('dot').className = 'dot ' + (online ? 'ok' : 'bad');
+    $('tvs').textContent = online ? 'TV ' + big().width + ' x ' + big().height : 'nothing to replace on this tv';
+    draw();
+  }).catch(function () { online = false; $('dot').className = 'dot bad'; $('tvs').textContent = 'TV not reachable'; });
+}
+poll(); setInterval(function () { if (!online) poll(); }, 5000);
+
+// ---------- preview ----------
+var raf = 0;
+function draw() { if (!raf) raf = requestAnimationFrame(paint); }
+function paint() {
+  raf = 0;
+  var cv = $('cv'), T = big(), wpx = $('screen').clientWidth * dpr;
+  $('screen').classList.toggle('checker', o.bg === 'transparent' || o.knock);
+  if (!img) { cv.width = 1; cv.height = 1; return; }
+  var p = {}; for (var k in o) p[k] = o[k]; p.scale = wpx / T.width;
+  GSR.render(img, T.width, T.height, p, cv);
+  $('zv').textContent = Math.round(o.zoom * 100) + '%'; $('zoom').value = Math.round(o.zoom * 100);
+  var L = GSR.layout(img.naturalWidth, img.naturalHeight, T.width, T.height, o);
+  var native = o.mode === 'fit' && o.zoom === 1 && GSR.baseScale.apply(null, GSR.turned(img.naturalWidth, img.naturalHeight, o).concat([T.width, T.height, 'fit'])) === 1;
+  $('chip').textContent = native ? 'Shown at its own size' : Math.round(L.width) + ' x ' + Math.round(L.height) + ' on ' + T.width + ' x ' + T.height;
+  var bc = o.bg === 'transparent' ? '#e6007e' : o.bg;
+  document.querySelector('.bezel').style.setProperty('--glow', bc + '55');
+}
+window.addEventListener('resize', draw);
+
+// ---------- gestures: drag to move, pinch to zoom, double tap to reset ----------
+var pts = {}, last = null, tapAt = 0, moved = false, guideV = false, guideH = false, hideChip = 0;
+function gesture() { var k = Object.keys(pts), a = pts[k[0]], b = pts[k[1]];
+  return b ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y), n: 2 } : { x: a.x, y: a.y, d: 0, n: 1 }; }
+var sc = $('screen');
+sc.addEventListener('pointerdown', function (e) {
   if (!img) return;
-  targets.forEach(function (t) {
-    var f = document.createElement('figure'), c = GSR.render(img, t.width, t.height, o);
-    f.appendChild(c); var cap = document.createElement('figcaption'); cap.textContent = t.width + ' x ' + t.height; f.appendChild(cap); box.appendChild(f);
-  });
+  sc.setPointerCapture(e.pointerId); pts[e.pointerId] = { x: e.clientX, y: e.clientY }; last = gesture();
+  if (Object.keys(pts).length === 1) moved = false;
+  $('chip').hidden = false; clearTimeout(hideChip);
+});
+sc.addEventListener('pointermove', function (e) {
+  if (!pts[e.pointerId] || !img) return;
+  pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+  var g = gesture(), w = sc.clientWidth, h = sc.clientHeight;
+  if (g.n !== last.n) { last = g; return; }
+  var mx = (g.x - last.x) / w, my = (g.y - last.y) / h;
+  if (Math.abs(mx) + Math.abs(my) > 0.002 || g.n === 2) moved = true;
+  if (g.n === 2 && last.d > 0) o.zoom = Math.max(0.1, Math.min(4, o.zoom * g.d / last.d));
+  var rx = (o.rdx == null ? o.dx : o.rdx) + mx, ry = (o.rdy == null ? o.dy : o.rdy) + my;
+  o.rdx = rx; o.rdy = ry; o.dx = GSR.snap(rx); o.dy = GSR.snap(ry);
+  var v = o.dx === 0, hz = o.dy === 0;
+  if ((v && !guideV) || (hz && !guideH)) buzz(6);
+  guideV = v; guideH = hz; $('gv').classList.toggle('on', v); $('gh').classList.toggle('on', hz);
+  last = g; draw();
+});
+function up(e) {
+  if (!pts[e.pointerId]) return;
+  delete pts[e.pointerId];
+  if (Object.keys(pts).length) { last = gesture(); return; }
+  delete o.rdx; delete o.rdy;
+  $('gv').classList.remove('on'); $('gh').classList.remove('on'); guideV = guideH = false;
+  hideChip = setTimeout(function () { $('chip').hidden = true; }, 1200);
+  if (!moved) { var t = Date.now(); if (t - tapAt < 300) { o.zoom = 1; o.dx = 0; o.dy = 0; buzz(12); draw(); tapAt = 0; } else tapAt = t; }
+  dirty();
 }
-function seg(id, key) {
-  [].forEach.call($(id).children, function (b) { b.onclick = function () {
-    [].forEach.call($(id).children, function (x) { x.classList.toggle('on', x === b); }); o[key] = b.dataset.v; draw(); }; });
+sc.addEventListener('pointerup', up); sc.addEventListener('pointercancel', up);
+sc.addEventListener('wheel', function (e) { if (!img) return; e.preventDefault(); o.zoom = Math.max(0.1, Math.min(4, o.zoom * Math.exp(-e.deltaY / 400))); draw(); dirty(); }, { passive: false });
+
+// ---------- controls ----------
+function radio(id, v) { [].forEach.call($(id).querySelectorAll('[role=radio]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.v === v)); }); }
+[].forEach.call($('mode').querySelectorAll('button'), function (b) { b.onclick = function () {
+  if (o.mode === b.dataset.v) return;
+  o.mode = b.dataset.v; o.zoom = 1; o.dx = 0; o.dy = 0; $('mode').dataset.v = o.mode; radio('mode', o.mode); buzz(); draw(); dirty(); }; });
+function setBg(v) {
+  bgPick = v; radio('bg', v);
+  o.bg = v === 'auto' ? edge : v === 'custom' ? $('bgc').value : v; draw(); dirty();
 }
+[].forEach.call($('bg').querySelectorAll('button'), function (b) { b.onclick = function () { buzz(); setBg(b.dataset.v); }; });
+$('bgc').oninput = function () { setBg('custom'); };
+$('bgc').onclick = function () { setBg('custom'); };
+function range(id, out, key, f, fmt) { $(id).oninput = function () { o[key] = f(+this.value); $(out).textContent = fmt(+this.value); paintRange(this); draw(); dirty(); }; }
+function paintRange(r) { r.style.setProperty('--p', ((r.value - r.min) / (r.max - r.min) * 100) + '%'); }
+range('zoom', 'zv', 'zoom', function (v) { return v / 100; }, function (v) { return v + '%'; });
+range('br', 'brv', 'brightness', function (v) { return v; }, String);
+range('ct', 'ctv', 'contrast', function (v) { return v; }, String);
+range('thr', 'thv', 'threshold', function (v) { return v; }, String);
+$('knock').onchange = function () { o.knock = this.checked; $('thrbox').hidden = !this.checked; draw(); dirty(); };
+$('rot').onclick = function () { o.rotate = ((o.rotate || 0) + 90) % 360; o.dx = 0; o.dy = 0; buzz(); pop(this); draw(); dirty(); };
+$('safe').onclick = function () { var on = !sc.classList.contains('show-safe'); sc.classList.toggle('show-safe', on); this.setAttribute('aria-pressed', String(on)); buzz(); };
+$('reset').onclick = function () { o = GSR.defaults(); edgeFromImage(); setBg('#000000'); sync(); buzz(); draw(); dirty(); };
+$('other').onclick = function () { $('file').click(); };
 function sync() {
-  [].forEach.call($('mode').children, function (b) { b.classList.toggle('on', b.dataset.v === o.mode); });
-  [].forEach.call($('bg').children, function (b) { b.classList.toggle('on', b.dataset.v === o.bg); });
-  $('zoom').value = o.zoom * 100; $('dx').value = o.dx * 100; $('dy').value = o.dy * 100; $('knock').checked = o.knock; $('thr').value = o.threshold;
+  $('mode').dataset.v = o.mode; radio('mode', o.mode);
+  $('zoom').value = o.zoom * 100; $('br').value = o.brightness; $('ct').value = o.contrast; $('thr').value = o.threshold; $('knock').checked = o.knock; $('thrbox').hidden = !o.knock;
+  $('brv').textContent = o.brightness; $('ctv').textContent = o.contrast; $('thv').textContent = o.threshold;
+  ['zoom', 'br', 'ct', 'thr'].forEach(function (i) { paintRange($(i)); });
 }
-seg('mode', 'mode'); seg('bg', 'bg');
-$('bgc').oninput = function () { o.bg = this.value; sync(); draw(); };
-$('zoom').oninput = function () { o.zoom = this.value / 100; draw(); };
-$('dx').oninput = function () { o.dx = this.value / 100; draw(); };
-$('dy').oninput = function () { o.dy = this.value / 100; draw(); };
-$('knock').onchange = function () { o.knock = this.checked; draw(); };
-$('thr').oninput = function () { o.threshold = +this.value; draw(); };
-$('reset').onclick = function () { o = GSR.defaults(); sync(); draw(); };
-$('pick').onclick = function () { $('file').click(); };
+sync();
+
+// ---------- actual size ----------
+$('fullbtn').onclick = function () {
+  if (!img) return;
+  var T = big(), p = {}; for (var k in o) p[k] = o[k];
+  var c = GSR.render(img, T.width, T.height, p);
+  $('fullcap').textContent = T.width + ' x ' + T.height + ', exactly what the TV gets';
+  c.toBlob(function (b) { var u = URL.createObjectURL(b), im = $('fullimg'); im.onload = function () { URL.revokeObjectURL(u); }; im.src = u; im.width = T.width / dpr; $('full').classList.add('on'); $('fullx').focus(); });
+};
+$('fullx').onclick = function () { $('full').classList.remove('on'); $('fullbtn').focus(); };
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('full').classList.remove('on'); });
+
+// ---------- picking ----------
+$('empty').onclick = function () { $('file').click(); };
+function edgeFromImage() {
+  var k = Math.min(1, 256 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+  var c = document.createElement('canvas'); c.width = w; c.height = h; var x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+  edge = GSR.edgeColor(x.getImageData(0, 0, w, h).data, w, h);
+  document.querySelector('.sw .auto i').style.setProperty('--c', edge);
+}
+var MAXSIDE = 7680, MAXBYTES = 8e6;
+function isHeic(f) { return /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name); }
 $('file').onchange = function () {
-  var f = this.files[0]; if (!f) return;
-  if (f.size > 12e6) return msg('that file is too big');
-  var rd = new FileReader();
-  rd.onload = function () {
-    var i = new Image();
-    i.onload = function () { img = i; srcB64 = String(rd.result).split(',')[1]; $('nm').value = f.name.replace(/\.[^.]+$/, '').slice(0, 40);
-      o = GSR.defaults(); sync(); draw(); $('send').classList.remove('hidden'); $('adjust').classList.remove('hidden'); msg(''); };
-    i.onerror = function () { msg('that image cannot be read'); };
-    i.src = rd.result;
+  var f = this.files[0]; this.value = ''; if (!f) return;
+  msg('');
+  if (f.size > 40e6) return msg('that file is too big');
+  var url = URL.createObjectURL(f), i = new Image();
+  i.onload = function () {
+    var ok = /^image\/(png|jpeg|webp)$/.test(f.type) && f.size <= MAXBYTES && Math.max(i.naturalWidth, i.naturalHeight) <= MAXSIDE;
+    var done = function (b64) { img = i; srcB64 = b64; start(f); };
+    if (ok) { var rd = new FileReader(); rd.onload = function () { done(String(rd.result).split(',')[1]); }; rd.readAsDataURL(f); return; }
+    // HEIC, GIF, AVIF or very large files: keep a JPEG copy as the source, so the TV can redo the render later.
+    var k = Math.min(1, MAXSIDE / Math.max(i.naturalWidth, i.naturalHeight)), c = document.createElement('canvas');
+    c.width = Math.round(i.naturalWidth * k); c.height = Math.round(i.naturalHeight * k); c.getContext('2d').drawImage(i, 0, 0, c.width, c.height);
+    var u = c.toDataURL('image/jpeg', 0.92), j = new Image(); j.onload = function () { i = j; done(u.split(',')[1]); }; j.src = u;
   };
-  rd.readAsDataURL(f);
+  i.onerror = function () { URL.revokeObjectURL(url);
+    msg(isHeic(f) ? 'this browser cannot open heic. On iPhone set Camera, Formats to Most Compatible, or share it as a jpeg' : 'that image cannot be read'); };
+  i.src = url;
 };
+function start(f) {
+  o = GSR.defaults(); edgeFromImage(); setBg('#000000'); sync();
+  $('nm').value = f.name.replace(/\.[^.]+$/, '').slice(0, 40);
+  $('empty').hidden = true; $('ed').hidden = false; $('opts').hidden = false;
+  $('hint').textContent = 'Pinch to size, drag to move, double tap to reset';
+  $('size').textContent = img.naturalWidth + ' x ' + img.naturalHeight;
+  setState('ready'); draw(); pop(document.querySelector('.bezel')); buzz(10);
+}
+
+// ---------- send ----------
+function setState(s, p) {
+  state = s; var b = $('send'), t = $('sendt');
+  b.classList.toggle('done', s === 'done'); b.disabled = s === 'busy';
+  t.textContent = { pick: 'Choose image', ready: 'Send to TV', busy: p || 'Sending', done: $('now').checked ? 'Sent. Confirm on the TV' : 'Sent. Pick it on the TV' }[s];
+  if (s !== 'busy') $('prog').style.width = '0';
+}
+function dirty() { if (state === 'done') setState('ready'); }
+$('now').onchange = function () { buzz(); dirty(); };
 $('send').onclick = function () {
-  if (!img || !targets.length) return;
-  var b = $('send'); b.disabled = true; msg('sending');
-  fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: $('nm').value, source: srcB64, params: o, renders: GSR.renderAll(img, targets, o) }) })
-    .then(function (r) { return r.json(); })
-    .then(function (j) { msg(j.ok ? 'Sent. Pick it on the TV.' : j.error); b.disabled = false; })
-    .catch(function () { msg('cannot reach the tv'); b.disabled = false; });
+  if (state === 'pick' || !img) return $('file').click();
+  if (state === 'done') return;
+  if (!online) return msg('cannot reach the tv');
+  msg(''); setState('busy', 'Preparing'); $('prog').style.width = '8%';
+  setTimeout(function () {
+    var p = {}; for (var k in o) if (k !== 'rdx' && k !== 'rdy') p[k] = o[k];
+    var body;
+    try { body = JSON.stringify({ name: $('nm').value, source: srcB64, params: p, renders: GSR.renderAll(img, targets, p), apply: $('now').checked }); }
+    catch (e) { setState('ready'); return msg('this phone ran out of memory, try a smaller image'); }
+    var x = new XMLHttpRequest(); x.open('POST', '/api/upload'); x.setRequestHeader('Content-Type', 'application/json');
+    x.upload.onprogress = function (e) { if (e.lengthComputable) { var q = e.loaded / e.total; $('prog').style.width = (10 + q * 85) + '%'; $('sendt').textContent = 'Sending ' + Math.round(q * 100) + '%'; } };
+    x.onload = function () { var j = {}; try { j = JSON.parse(x.responseText); } catch (e) {}
+      if (x.status === 200 && j.ok) { $('prog').style.width = '100%'; setTimeout(function () { setState('done'); pop($('send')); buzz([10, 40, 10]); }, 150); }
+      else { setState('ready'); msg(j.error || 'the tv did not take it'); } };
+    x.onerror = function () { setState('ready'); msg('cannot reach the tv'); };
+    x.send(body);
+  }, 30);
 };
+})();
 </script></body></html>

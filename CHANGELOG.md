@@ -2,6 +2,22 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0]
+
+### Added
+
+- New phone editor: a live preview framed as a TV, pinch to size, drag to move with snapping to center, double tap to reset
+- Background swatches: black, matched to the image edge, white, or any color
+- Adjust: rotate, brightness, contrast, safe area guide, and an actual size view of the exact render
+- Apply now: after sending, the TV opens the logo's menu so the person at the TV confirms
+- Send shows progress and a done state
+- HEIC and other formats the phone can open are sent as JPEG; a clear message when the phone cannot open them
+
+### Changed
+
+- Rotate, brightness and contrast are part of the shared renderer, so the TV editor redraws them the same way
+- Uploads up to 48 MB, so full-screen photo renders fit
+
 ## [0.2.4]
 
 ### Fixed

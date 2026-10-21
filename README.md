@@ -6,15 +6,17 @@ Replace the LG logo on the power-off screen of a rooted LG webOS TV with your ow
 
 ## Features
 
-- Send a logo from your phone: scan the code on the TV, pick an image, press Send. The preview shows exactly what the TV will show.
+- Send a logo from your phone: scan the code on the TV, pick an image, press Send. The TV-shaped preview is drawn by the same code the TV uses, so it shows exactly what the TV will show.
+- Phone editor: Fit or Fill in one tap, pinch to size, drag to move with snapping to center, double tap to reset. Background black, matched to the image edge, white or any color. Adjust holds rotate, brightness, contrast, a safe area guide and an actual size view.
+- Apply now: the TV opens the logo's menu so the person at the TV confirms.
 - Works with a basic remote, arrows, OK and Back only, and with the Magic Remote pointer: point to focus, click to choose, click outside a menu to close it, scroll the logos with the wheel. Press OK on a logo for Apply, Edit or Delete; Delete asks first.
 - Restore LG, and a switch to hide the power-off logo.
 - Edit on the TV: Fit or Fill, size, move, background, black to transparent.
 - Report my TV: read-only details about how your TV draws the logo, sent as a GitHub issue in one scan.
 
-| Phone | TV editor |
-| --- | --- |
-| <img src="docs/phone.png" width="300"> | <img src="docs/tv-editor.png" width="560"> |
+| Phone | Phone, Adjust | TV editor |
+| --- | --- | --- |
+| <img src="docs/phone.png" width="240"> | <img src="docs/phone-adjust.png" width="240"> | <img src="docs/tv-editor.png" width="480"> |
 
 ![Logo options](docs/tv-menu.png)
 
