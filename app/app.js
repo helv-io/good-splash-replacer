@@ -69,7 +69,9 @@ function loadToggle() { req('GET', '/api/logo-display', null, function (e, j) { 
 function act(p, msg) { req('POST', p, null, function (e) { toast(e ? e : msg); refresh(true); loadToggle(); }); }
 
 // ---------- editor ----------
-var BGS = [['#000000', 'black'], ['#ffffff', 'white']];
+// A full-screen preview of the power-off screen. The preview is drawn downscaled to the screen; Save renders every
+// target at full size with the same render.js, from the same cleaned settings the phone sends.
+var SW = 1920, SH = 1080, STEP = 0.01;
 function openEditor() {
   var it = st && st.items.filter(function (i) { return i.id == sel; })[0];
   if (!it) return toast('pick a logo first');
@@ -77,20 +79,64 @@ function openEditor() {
   loadImg(API + '/img/' + it.id + '/source?' + ver, function (img) {
     if (!img) return toast('cannot load the image');
     var o = GSR.clean(it.params);
-    ed = { item: it, img: img, o: o }; view = 'editor';
-    $('edname').textContent = it.name; $('editor').classList.remove('hidden'); drawEditor();
-    document.querySelector('#editor .e').focus();
+    ed = { item: it, img: img, o: o, orig: JSON.stringify(o), edge: edgeOf(img), moving: false, busy: false };
+    view = 'editor'; $('edname').textContent = it.name;
+    $('edgedot').style.setProperty('--c', ed.edge);
+    $('editor').className = ''; drawEditor();
+    document.querySelector('#dock .e').focus();
   });
 }
+function edgeOf(img) {
+  var k = Math.min(1, 256 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
+  var c = document.createElement('canvas'); c.width = w; c.height = h; var x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+  try { return GSR.edgeColor(x.getImageData(0, 0, w, h).data, w, h); } catch (e) { return '#000000'; }
+}
 function bigTarget() { return st.targets.slice().sort(function (a, b) { return b.width - a.width; })[0]; }
-function drawEditor() {
-  var t = bigTarget(), o = ed.o; GSR.render(ed.img, t.width, t.height, o, $('edcv'));
-  var bg = BGS.filter(function (b) { return b[0] == o.bg; })[0];
-  $('bgbtn').textContent = 'Background: ' + (bg ? bg[1] : 'custom');
+function isDirty() { return ed && JSON.stringify(GSR.clean(ed.o)) != ed.orig; }
+var edRaf = 0;
+function drawEditor() { if (!edRaf) edRaf = (window.requestAnimationFrame || setTimeout)(paintEditor); }
+function paintEditor() {
+  edRaf = 0; if (!ed) return;
+  var t = bigTarget(), o = ed.o, p = GSR.clean(o), img = ed.img;
+  p.scale = SW / t.width; GSR.render(img, t.width, t.height, p, $('edcv'));
+  $('mode').dataset.v = o.mode;
+  [].forEach.call(document.querySelectorAll('#mode .btn'), function (b) { b.classList.toggle('on', b.dataset.a == o.mode); });
+  var pick = o.bg == '#000000' || o.bg == '#ffffff' ? o.bg : o.bg == ed.edge ? 'auto' : '';
+  [].forEach.call(document.querySelectorAll('#bgs .swb'), function (b) { b.classList.toggle('on', b.dataset.v == pick); });
+  $('zv').textContent = Math.round(o.zoom * 100) + '%';
+  tone('br', o.brightness); tone('ct', o.contrast);
+  $('safebtn').classList.toggle('on', $('editor').classList.contains('show-safe'));
+  $('movebtn').classList.toggle('on', ed.moving); $('adjbtn').classList.toggle('on', view == 'adjust');
+  var L = GSR.layout(img.naturalWidth, img.naturalHeight, t.width, t.height, o);
+  var native = o.mode == 'fit' && o.zoom == 1 && GSR.baseScale.apply(null, GSR.turned(img.naturalWidth, img.naturalHeight, o).concat([t.width, t.height, 'fit'])) == 1;
+  $('edchip').textContent = (native ? 'Shown at its own size' : Math.round(L.width) + ' x ' + Math.round(L.height)) + ' on ' + t.width + ' x ' + t.height;
+  $('gv').classList.toggle('on', ed.moving && o.dx === 0); $('gh').classList.toggle('on', ed.moving && o.dy === 0);
+}
+function tone(id, v) {
+  $(id + 'v').textContent = (v > 0 ? '+' : '') + v;
+  var b = $(id + 'bar').style; b.left = (v < 0 ? 50 + v / 2 : 50) + '%'; b.width = Math.abs(v) / 2 + '%';
+}
+function openSheet() { view = 'adjust'; $('editor').classList.add('sheet-on'); drawEditor(); document.querySelector('#adjust .e').focus(); }
+function closeSheet() { view = 'editor'; $('editor').classList.remove('sheet-on'); drawEditor(); $('adjbtn').focus(); }
+function startMove() { ed.moving = true; $('editor').classList.add('moving'); drawEditor(); }
+function endMove() { ed.moving = false; delete ed.o.rdx; delete ed.o.rdy; $('editor').classList.remove('moving'); drawEditor(); $('movebtn').focus(); }
+function nudge(dx, dy, fast) {
+  var o = ed.o, s = fast ? STEP * 3 : STEP;
+  o.rdx = (o.rdx == null ? o.dx : o.rdx) + dx * s; o.rdy = (o.rdy == null ? o.dy : o.rdy) + dy * s;
+  o.dx = GSR.snap(o.rdx, STEP * 0.6); o.dy = GSR.snap(o.rdy, STEP * 0.6); drawEditor();
+}
+// Back and Cancel: close what is open first, then ask before throwing edits away.
+function leaveEditor() {
+  if (!isDirty()) return closeOverlay();
+  view = 'unsaved'; $('unsaved').classList.remove('hidden'); document.querySelector('#unsaved [data-u="keep"]').focus();
+}
+function unsavedAction(u) {
+  if (u == 'discard') return closeOverlay();
+  $('unsaved').classList.add('hidden'); view = 'editor'; document.querySelector('#dock [data-a="cancel"]').focus();
 }
 function closeOverlay() {
   view = 'main'; ed = null;
-  ['editor', 'reportbox', 'menu', 'confirm'].forEach(function (i) { $(i).classList.add('hidden'); });
+  ['editor', 'reportbox', 'menu', 'confirm', 'unsaved'].forEach(function (i) { $(i).classList.add('hidden'); });
   render(); focusMain();
 }
 function focusMain() {
@@ -119,21 +165,32 @@ function confirmAction(c) {
   var id = menuId; closeOverlay();
   if (c == 'delete') { menuId = null; act('/api/delete?id=' + id, 'Deleted'); }
 }
-function edAction(a) {
-  var o = ed.o, step = 0.02;
-  if (a == 'fit' || a == 'fill') { o.mode = a; o.zoom = 1; o.dx = 0; o.dy = 0; }
+function edAction(a, el) {
+  var o = ed.o;
+  if (ed.busy) return;
+  if (a == 'fit' || a == 'fill') { if (o.mode != a) { o.mode = a; o.zoom = 1; o.dx = 0; o.dy = 0; } }
+  else if (a == 'bg') o.bg = el.dataset.v == 'auto' ? ed.edge : el.dataset.v;
   else if (a == 'zin') o.zoom = Math.min(4, +(o.zoom * 1.1).toFixed(3));
   else if (a == 'zout') o.zoom = Math.max(0.1, +(o.zoom / 1.1).toFixed(3));
-  else if (a == 'left') o.dx -= step; else if (a == 'right') o.dx += step;
-  else if (a == 'up') o.dy -= step; else if (a == 'down') o.dy += step;
-  else if (a == 'center') { o.dx = 0; o.dy = 0; }
-  else if (a == 'bg') { var i = BGS.map(function (b) { return b[0]; }).indexOf(o.bg); o.bg = BGS[(i + 1) % BGS.length][0]; }
-  else if (a == 'cancel') return closeOverlay();
-  else if (a == 'save' || a == 'saveas') {
-    var renders = GSR.renderAll(ed.img, st.targets, o), id = ed.item.id;
-    var done = function (e) { toast(e ? e : 'Saved'); if (!e) { closeOverlay(); refresh(true); } };
-    if (a == 'save') req('POST', '/api/render?id=' + id, { renders: renders, params: o }, done);
-    else req('POST', '/api/upload', { name: ed.item.name + ' edit', from: id, renders: renders, params: o }, done);
+  else if (a == 'move') return startMove();
+  else if (a == 'adjust') return view == 'adjust' ? closeSheet() : openSheet();
+  else if (a == 'rot') { o.rotate = (o.rotate + 90) % 360; o.dx = 0; o.dy = 0; }
+  else if (a == 'safe') $('editor').classList.toggle('show-safe');
+  else if (a == 'reset') { var bg = o.bg; ed.o = o = GSR.defaults(); o.bg = bg; }
+  else if (a == 'br-' || a == 'br+') o.brightness = Math.max(-100, Math.min(100, o.brightness + (a == 'br+' ? 5 : -5)));
+  else if (a == 'ct-' || a == 'ct+') o.contrast = Math.max(-100, Math.min(100, o.contrast + (a == 'ct+' ? 5 : -5)));
+  else if (a == 'cancel') return leaveEditor();
+  else if (a == 'save' || a == 'apply') {
+    var p = GSR.clean(o), id = ed.item.id; ed.busy = true; toast('Saving');
+    // Let the toast paint before the full-size render blocks the page.
+    setTimeout(function () {
+      var renders = GSR.renderAll(ed.img, st.targets, p);
+      req('POST', '/api/render?id=' + id, { renders: renders, params: p }, function (e) {
+        if (e) { ed.busy = false; return toast(e); }
+        closeOverlay();
+        if (a == 'apply') act('/api/apply?id=' + id, 'Saved and applied'); else { toast('Saved'); refresh(true); }
+      });
+    }, 30);
     return;
   }
   drawEditor();
@@ -163,13 +220,14 @@ function activate(el) {
   else if (el.id == 'toggle') act('/api/logo-display?value=' + ($('tg').className == 'on' ? 'off' : 'on'), 'Saved');
   else if (el.id == 'report') openReport();
   else if (el.id == 'repclose') closeOverlay();
-  else if (el.dataset.a) edAction(el.dataset.a);
+  else if (el.dataset.a) edAction(el.dataset.a, el);
+  else if (el.dataset.u) unsavedAction(el.dataset.u);
   else if (el.dataset.m) menuAction(el.dataset.m);
   else if (el.dataset.c) confirmAction(el.dataset.c);
   else if (el.dataset.id) openMenu(el.dataset.id);
 }
 function focusables() {
-  var q = { editor: '#editor .e', report: '#reportbox .r', menu: '#menu .m', confirm: '#confirm .c' }[view] || '.f,.tile';
+  var q = { editor: '#dock .e', adjust: '#adjust .e', unsaved: '#unsaved .u', report: '#reportbox .r', menu: '#menu .m', confirm: '#confirm .c' }[view] || '.f,.tile';
   return [].slice.call(document.querySelectorAll(q));
 }
 function move(dx, dy) {
@@ -185,11 +243,25 @@ function move(dx, dy) {
   });
   if (best) best.focus();
 }
+function back() {
+  if (view == 'unsaved') unsavedAction('keep');
+  else if (view == 'adjust') closeSheet();
+  else if (view == 'editor') leaveEditor();
+  else if (view != 'main') closeOverlay();
+  else exitApp();
+}
 document.addEventListener('keydown', function (e) {
   var k = e.keyCode, a = document.activeElement;
+  // Move mode: arrows pan the image, OK or Back ends it. Holding an arrow moves faster.
+  if (view == 'editor' && ed && ed.moving) {
+    if (k == 37) nudge(-1, 0, e.repeat); else if (k == 39) nudge(1, 0, e.repeat); else if (k == 38) nudge(0, -1, e.repeat); else if (k == 40) nudge(0, 1, e.repeat);
+    else if (k == 13 || k == 461 || k == 8 || k == 27) endMove();
+    else return;
+    e.preventDefault(); return;
+  }
   if (k == 37) move(-1, 0); else if (k == 39) move(1, 0); else if (k == 38) move(0, -1); else if (k == 40) move(0, 1);
   else if (k == 13) activate(a);
-  else if (k == 461 || k == 8 || k == 27) { e.preventDefault(); if (view != 'main') closeOverlay(); else exitApp(); return; }
+  else if (k == 461 || k == 8 || k == 27) { e.preventDefault(); back(); return; }
   else return;
   e.preventDefault();
 });
@@ -202,9 +274,26 @@ function focusTarget(t) {
 }
 document.addEventListener('mouseover', function (e) { var el = focusTarget(e.target); if (el && document.activeElement !== el) el.focus(); });
 document.addEventListener('click', function (e) {
+  if (view == 'unsaved' && e.target.id == 'unsaved') { unsavedAction('keep'); return; }
+  if (ed && ed.moving) { endMove(); return; }
+  if (view == 'adjust' && e.target.id == 'edcv') { closeSheet(); return; }
   if (e.target.classList && e.target.classList.contains('modal')) { closeOverlay(); return; }
   var el = focusTarget(e.target); if (!el) return;
   e.preventDefault(); el.focus(); activate(el);
+});
+// In the editor the pointer drags the image on the preview and the wheel sizes it.
+var drag = null;
+$('edcv').addEventListener('mousedown', function (e) { if (view == 'editor' && ed && !ed.moving) drag = { x: e.clientX, y: e.clientY, dx: ed.o.dx, dy: ed.o.dy, moved: false }; });
+document.addEventListener('mousemove', function (e) {
+  if (!drag || !ed) return;
+  var mx = (e.clientX - drag.x) / SW, my = (e.clientY - drag.y) / SH;
+  if (Math.abs(mx) + Math.abs(my) > 0.003) drag.moved = true;
+  ed.o.dx = GSR.snap(drag.dx + mx); ed.o.dy = GSR.snap(drag.dy + my); drawEditor();
+});
+document.addEventListener('mouseup', function () { drag = null; });
+$('edcv').addEventListener('wheel', function (e) {
+  if (!ed || view != 'editor') return; e.preventDefault();
+  ed.o.zoom = Math.max(0.1, Math.min(4, +(ed.o.zoom * Math.exp(-(e.deltaY || 0) / 400)).toFixed(3))); drawEditor();
 });
 $('grid').addEventListener('wheel', function (e) { $('grid').scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); });
 document.addEventListener('focusin', function (e) { if (e.target.classList.contains('tile') && e.target.scrollIntoView) e.target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });

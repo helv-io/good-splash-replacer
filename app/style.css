@@ -31,9 +31,6 @@ main{padding:0 80px}.lbl{font-size:28px;color:#aaa;margin:16px 0 12px}.sub{font-
 footer{position:absolute;bottom:30px;left:80px;font-size:22px;color:#666}
 .overlay{position:absolute;inset:0;background:#0b0b0d;padding:50px 80px}
 .hidden{display:none}
-.edstage{width:960px;height:540px;border-radius:16px;border:2px solid #222;overflow:hidden;
- background:#000;margin-bottom:24px}
-.edstage canvas{width:960px;height:540px;display:block}
 .tools{display:flex;gap:16px;align-items:center;margin-bottom:18px}.tools .btn{font-size:26px;padding:16px 22px}
 .rep{display:flex;gap:50px}
 .rep pre{flex:1;height:820px;margin:0;overflow:hidden;white-space:pre-wrap;word-break:break-all;font-size:21px;line-height:1.35;background:#141418;border-radius:14px;padding:24px;color:#ccc}
@@ -43,3 +40,75 @@ footer{position:absolute;bottom:30px;left:80px;font-size:22px;color:#666}
 .modal.hidden{display:none}
 .card{background:#16161a;border:2px solid #333;border-radius:20px;padding:40px;width:640px;display:flex;flex-direction:column;gap:18px}
 .card h3{margin:0 0 8px;font-size:36px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Editor: a full-screen preview of the power-off screen with a dock, in the phone page's visual language */
+#editor{--pink:#e6007e;--pink2:#ff3fa4;--card:#16161dd9;--line:#ffffff1f;--mute:#9a9aa8;--ease:cubic-bezier(.2,.8,.2,1);
+ position:absolute;inset:0;background:#000;overflow:hidden;font-family:"LG Smart UI",-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#editor.hidden{display:none}
+#edcv{position:absolute;inset:0;width:1920px;height:1080px;display:block;transition:filter .4s var(--ease)}
+#editor.sheet-on #edcv{filter:brightness(.75)}
+#editor .btn{font-family:inherit;border:0;border-radius:18px;background:#ffffff14;color:#f2f2f5;text-align:center;padding:0;transition:transform .2s var(--ease),background .2s,box-shadow .2s,color .2s}
+#editor .btn:focus{outline:none;transform:scale(1.08);background:#ffffff2e;box-shadow:0 0 0 4px #fff,0 0 0 10px #e6007e66,0 12px 30px -8px #000}
+.edtop{position:absolute;left:60px;right:60px;top:44px;display:flex;justify-content:space-between;align-items:center;transition:opacity .3s}
+.edtitle,.chip{background:#000000a6;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:99px;padding:12px 28px;font-size:26px;color:#ddd}
+.edtitle b{color:var(--pink2);font-weight:700;margin-right:6px}
+.dock{position:absolute;left:60px;right:60px;bottom:44px;height:132px;display:flex;align-items:center;gap:20px;padding:0 26px;
+ background:var(--card);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);border:1px solid var(--line);border-radius:34px;
+ box-shadow:0 30px 80px -20px #000;animation:rise .45s var(--ease);transition:transform .4s var(--ease),opacity .3s}
+@keyframes rise{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+#editor .seg{position:relative;display:flex;background:#00000066;border:1px solid var(--line);border-radius:22px;padding:6px;height:92px}
+#editor .seg .btn{position:relative;z-index:1;width:132px;background:none;font-size:28px;font-weight:700;color:var(--mute);border-radius:16px}
+#editor .seg .btn small{display:block;font-size:17px;font-weight:500;opacity:.8;margin-top:2px}
+#editor .seg .btn.on{color:#fff}
+#editor .seg .btn:focus{background:#ffffff1a}
+.seg .pill{position:absolute;top:6px;bottom:6px;left:6px;width:132px;background:var(--pink);border-radius:16px;box-shadow:0 6px 20px -6px var(--pink);transition:transform .35s var(--ease)}
+.seg[data-v=fill] .pill{transform:translateX(132px)}
+.grp{display:flex;flex-direction:column;gap:8px;align-items:center}
+.gl{font-size:18px;color:var(--mute);letter-spacing:.02em}
+.sws{display:flex;gap:16px}
+#editor .swb{width:58px;height:58px;border-radius:50%;box-shadow:0 0 0 2px #ffffff40;position:relative}
+#editor .swb.on{box-shadow:0 0 0 3px var(--pink2),0 0 0 7px #00000099}
+#editor .swb:focus{box-shadow:0 0 0 4px #fff,0 0 0 10px #e6007e66}
+#editor .swb.auto{background:conic-gradient(#e6007e,#ffb300,#2ecc71,#3498db,#9b59b6,#e6007e)}
+.swb.auto i{position:absolute;inset:10px;border-radius:50%;background:var(--c,#000)}
+.zm{display:flex;align-items:center;gap:12px}
+.zm output,.step output{min-width:90px;text-align:center;font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}
+#editor .rd{width:58px;height:58px;border-radius:50%;font-size:36px;line-height:58px}
+#editor .tb{height:76px;padding:0 24px;font-size:26px;font-weight:600;display:flex;align-items:center;gap:12px}
+#editor .tb svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+#editor .tb.on{background:#3a1029;box-shadow:inset 0 0 0 2px var(--pink)}
+#editor .tb.on:focus{box-shadow:0 0 0 4px #fff,0 0 0 10px #e6007e66}
+.chev{width:12px;height:12px;border-right:3px solid currentColor;border-top:3px solid currentColor;transform:rotate(-45deg) translate(-2px,2px);transition:transform .3s var(--ease)}
+.sheet-on .chev{transform:rotate(135deg) translate(-2px,2px)}
+.sp{flex:1}
+#editor .ghost{height:76px;padding:0 24px;font-size:26px;font-weight:600;background:#ffffff10}
+#editor .mainb{height:84px;padding:0 32px;font-size:28px;font-weight:700;background:var(--pink);box-shadow:0 12px 34px -10px var(--pink)}
+#editor .mainb:focus{background:#ff1a92}
+.sheet{position:absolute;left:50%;bottom:196px;width:1080px;margin-left:-540px;padding:30px 40px 34px;background:var(--card);backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);
+ border:1px solid var(--line);border-radius:34px;box-shadow:0 30px 80px -20px #000;transform:translateY(40px);opacity:0;pointer-events:none;transition:transform .4s var(--ease),opacity .3s}
+.sheet-on .sheet{transform:none;opacity:1;pointer-events:auto}
+.shead{font-size:30px;font-weight:700;margin-bottom:22px}
+.srow{display:flex;gap:18px;margin-bottom:26px}
+.srow .tb{flex:1;justify-content:center}
+.tg{width:56px;height:30px;border-radius:15px;background:#44444f;position:relative;transition:background .2s;margin-left:6px}
+.tg:after{content:"";position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .25s var(--ease)}
+.on .tg{background:var(--pink)}.on .tg:after{transform:translateX(26px)}
+.step{display:flex;align-items:center;gap:18px;margin-top:16px}
+.sl{width:200px;font-size:26px;color:var(--mute)}
+.meter{flex:1;height:8px;border-radius:4px;background:#33333f;position:relative;overflow:hidden}
+.meter i{position:absolute;top:0;bottom:0;left:50%;background:var(--pink);border-radius:4px;transition:left .2s var(--ease),width .2s var(--ease)}
+.safeg{position:absolute;pointer-events:none;border:2px dashed #ffffffaa;opacity:0;transition:opacity .3s}
+.safeg.a{inset:5%}.safeg.t{inset:10%;border-color:#ffd54acc}.show-safe .safeg{opacity:1}
+#editor .guide{position:absolute;background:var(--pink2);opacity:0;transition:opacity .2s;pointer-events:none}
+#editor .guide.v{left:50%;top:0;bottom:0;width:2px}#editor .guide.h{top:50%;left:0;right:0;height:2px}#editor .guide.on{opacity:.9}
+.movehint{position:absolute;left:50%;bottom:210px;transform:translate(-50%,30px);opacity:0;display:flex;align-items:center;gap:18px;font-size:28px;
+ background:#000000b3;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:99px;padding:16px 34px;transition:transform .35s var(--ease),opacity .3s;pointer-events:none}
+.arrows{display:flex;gap:6px}.arrows i,.movehint .ok{font-style:normal;font-size:20px;background:#ffffff26;border-radius:10px;padding:6px 10px}
+.movehint .ok{font-weight:700;background:var(--pink);margin-left:12px}
+.moving .movehint{transform:translate(-50%,0);opacity:1}
+.moving .dock{transform:translateY(40px);opacity:.25}
+.moving .edtop{opacity:.3}
+@media (prefers-reduced-motion:reduce){#editor *{transition:none!important;animation:none!important}}
+#unsaved .card{background:#16161de6;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid #ffffff1f;border-radius:34px;box-shadow:0 30px 80px -20px #000;font-family:"LG Smart UI",-apple-system,"Inter",system-ui,sans-serif;animation:rise .35s cubic-bezier(.2,.8,.2,1)}
+#unsaved .btn{border:0;border-radius:18px;text-align:center;font-weight:600;background:#ffffff14}
+#unsaved .primary{background:#e6007e}
+#unsaved .btn:focus{border:0;box-shadow:0 0 0 4px #fff,0 0 0 10px #e6007e66;transform:scale(1.06)}

@@ -18,7 +18,7 @@ test('no hint mentions a color button', () => {
 });
 
 test('every overlay has its own focus set so arrows never leave it', () => {
-  for (const v of ['editor', 'report', 'menu', 'confirm']) assert.match(app, new RegExp(v + ": '#"));
+  for (const v of ['editor', 'adjust', 'unsaved', 'report', 'menu', 'confirm']) assert.match(app, new RegExp(v + ": '#"));
 });
 
 test('delete asks first and focuses Cancel', () => {
@@ -33,4 +33,22 @@ test('the Magic Remote pointer can do everything the arrows can', () => {
   assert.match(app, /\$\('grid'\)\.addEventListener\('wheel'/);
   // pointer targets are limited to the open view, so a click never reaches the screen behind a dialog
   assert.match(app, /focusables\(\)\.indexOf\(el\) >= 0/);
+});
+
+test('the editor is driven by arrows and OK: move mode pans with arrows and OK ends it', () => {
+  assert.match(app, /ed\.moving\) \{\n    if \(k == 37\) nudge\(-1, 0/);
+  assert.match(app, /else if \(k == 13 \|\| k == 461 \|\| k == 8 \|\| k == 27\) endMove\(\)/);
+  assert.match(html, /Arrows move the image/);
+});
+
+test('Back closes the Adjust sheet first, then asks before dropping edits, with Keep editing focused', () => {
+  const b = app.slice(app.indexOf('function back()'));
+  assert.ok(b.indexOf("view == 'adjust'") < b.indexOf("view == 'editor'"));
+  assert.match(app, /if \(!isDirty\(\)\) return closeOverlay\(\)/);
+  assert.match(app, /#unsaved \[data-u="keep"\]'\)\.focus\(\)/);
+});
+
+test('the editor has every control as a focusable button', () => {
+  for (const a of ['fit', 'fill', 'bg', 'zin', 'zout', 'move', 'adjust', 'rot', 'safe', 'reset', 'br-', 'br+', 'ct-', 'ct+', 'cancel', 'save', 'apply'])
+    assert.match(html, new RegExp('class="e btn[^"]*" data-a="' + a.replace('+', '\\+') + '"'));
 });

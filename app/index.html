@@ -14,21 +14,40 @@
 </main>
 <footer>The first logo at power-on comes from the TV's bootloader and can't be changed.</footer>
 
-<div id="editor" class="overlay hidden">
- <h2>Edit <span id="edname"></span></h2>
- <div class="edstage"><canvas id="edcv"></canvas></div>
- <div class="tools">
-  <button class="e btn" data-a="fit">Fit</button><button class="e btn" data-a="fill">Fill</button>
-  <button class="e btn" data-a="zout">Smaller</button><button class="e btn" data-a="zin">Bigger</button>
-  <button class="e btn" data-a="left">Left</button><button class="e btn" data-a="right">Right</button>
-  <button class="e btn" data-a="up">Up</button><button class="e btn" data-a="down">Down</button>
-  <button class="e btn" data-a="center">Center</button>
+<div id="editor" class="hidden">
+ <canvas id="edcv"></canvas>
+ <div class="safeg a"></div><div class="safeg t"></div>
+ <div class="guide v" id="gv"></div><div class="guide h" id="gh"></div>
+ <div class="edtop"><div class="edtitle"><b>Edit</b> <span id="edname"></span></div><div class="chip" id="edchip"></div></div>
+ <div class="movehint" id="movehint"><span class="arrows"><i>◀</i><i>▲</i><i>▼</i><i>▶</i></span>Arrows move the image<span class="ok">OK</span>Done</div>
+ <div class="sheet" id="adjust">
+  <div class="shead">Adjust</div>
+  <div class="srow">
+   <button class="e btn tb" data-a="rot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rotate 90°</button>
+   <button class="e btn tb" data-a="safe" id="safebtn">Safe area<i class="tg"></i></button>
+   <button class="e btn tb" data-a="reset">Reset</button>
+  </div>
+  <div class="step"><span class="sl">Brightness</span><button class="e btn rd" data-a="br-" aria-label="Less brightness">−</button><div class="meter"><i id="brbar"></i></div><output id="brv">0</output><button class="e btn rd" data-a="br+" aria-label="More brightness">+</button></div>
+  <div class="step"><span class="sl">Contrast</span><button class="e btn rd" data-a="ct-" aria-label="Less contrast">−</button><div class="meter"><i id="ctbar"></i></div><output id="ctv">0</output><button class="e btn rd" data-a="ct+" aria-label="More contrast">+</button></div>
  </div>
- <div class="tools">
-  <button class="e btn" data-a="bg" id="bgbtn">Background: black</button>
- </div>
- <div class="tools">
-  <button class="e btn primary" data-a="save">Save</button><button class="e btn" data-a="saveas">Save as new</button><button class="e btn" data-a="cancel">Cancel</button>
+ <div class="dock" id="dock">
+  <div class="seg" id="mode" data-v="fit"><span class="pill"></span>
+   <button class="e btn" data-a="fit">Fit<small>whole image</small></button><button class="e btn" data-a="fill">Fill<small>whole screen</small></button>
+  </div>
+  <div class="grp"><div class="gl">Background</div><div class="sws" id="bgs">
+   <button class="e btn swb" data-a="bg" data-v="#000000" style="background:#000" aria-label="Black"></button>
+   <button class="e btn swb auto" data-a="bg" data-v="auto" aria-label="Match the image edge"><i id="edgedot"></i></button>
+   <button class="e btn swb" data-a="bg" data-v="#ffffff" style="background:#fff" aria-label="White"></button>
+  </div></div>
+  <div class="grp"><div class="gl">Size</div><div class="zm">
+   <button class="e btn rd" data-a="zout" aria-label="Smaller">−</button><output id="zv">100%</output><button class="e btn rd" data-a="zin" aria-label="Bigger">+</button>
+  </div></div>
+  <button class="e btn tb" data-a="move" id="movebtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"/></svg>Move</button>
+  <button class="e btn tb" data-a="adjust" id="adjbtn">Adjust<i class="chev"></i></button>
+  <span class="sp"></span>
+  <button class="e btn ghost" data-a="cancel">Cancel</button>
+  <button class="e btn ghost" data-a="save">Save</button>
+  <button class="e btn mainb" data-a="apply" id="applybtn">Save &amp; Apply</button>
  </div>
 </div>
 
@@ -46,6 +65,10 @@
 <div id="confirm" class="modal hidden"><div class="card">
  <h3>Delete <span id="confirmname"></span>?</h3>
  <div class="pair"><button class="c btn" data-c="delete">Delete</button><button class="c btn" data-c="cancel">Cancel</button></div>
+</div></div>
+<div id="unsaved" class="modal hidden"><div class="card">
+ <h3>Discard changes?</h3><div class="sub">Your edits to this logo are not saved.</div>
+ <div class="pair"><button class="u btn" data-u="discard">Discard</button><button class="u btn primary" data-u="keep">Keep editing</button></div>
 </div></div>
 <div id="toast"></div>
 <script src="app.js"></script></body></html>

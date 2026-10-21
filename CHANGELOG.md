@@ -4,6 +4,16 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+- New TV editor: a full-screen preview of the power-off screen at the TV's real size, with a dock in the phone page's look
+- Fit or Fill switch, background black, matched to the image edge or white, size, and Move: arrows move the image, OK ends it
+- Adjust sheet with rotate, brightness, contrast, a safe area guide and reset
+- Save & Apply in one step; Save as new is gone
+- Back closes Adjust first and asks before dropping edits
+- Magic Remote: drag the preview to move, scroll to size
+- The preview is drawn at screen size; Save renders every target at full size with the shared renderer, so the TV and the phone give the same image
+
 ### Removed
 
 - Black becomes transparent, and its threshold. The power-off screen is always opaque, so it did not fit a TV. Logos saved with it still load and the setting is ignored
