@@ -45,6 +45,7 @@ To keep the logo after a reboot, copy both startup scripts to `/var/lib/webosbre
 
 - Nothing is written to flash or to any partition. The stock files are never modified.
 - Restore LG undoes everything; so does a reboot without the startup scripts.
+- To uninstall: press Restore LG, delete `72-goodsplash-logo` and `73-goodsplash` from `/var/lib/webosbrew/init.d/`, then remove the app.
 - The report reads the first 64 bytes of the logo partition, read only.
 
 ## The first logo cannot change
