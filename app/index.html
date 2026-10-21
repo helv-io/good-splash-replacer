@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Good Splash Replacer</title>
+<link rel="stylesheet" href="style.css"><script src="qrcode.js"></script><script src="render.js"></script></head><body>
+<header><h1><span class="g">Good</span> Splash Replacer</h1><div id="status"></div></header>
+<main>
+ <section class="top">
+  <div class="cur"><div class="lbl">Power-off logo now</div><div class="stage"><img id="curimg" alt=""></div><div id="curname" class="sub"></div></div>
+  <div class="side">
+   <div class="pair"><button class="f btn primary" id="apply">Apply</button><button class="f btn" id="restore">Restore LG</button></div>
+   <div class="pair"><button class="f btn" id="edit">Edit</button><button class="f btn" id="report">Report my TV</button></div>
+   <button class="f btn toggle" id="toggle"><span>Show logo at power off</span><i id="tg"></i></button>
+   <div class="qrbox"><div id="qr" class="qr"></div><div><div class="lbl">Add a logo</div><div class="sub">Scan with your phone</div><div id="url" class="url"></div></div></div>
+  </div>
+ </section>
+ <section><div class="lbl">Your logos <span class="sub">· red button deletes</span></div><div id="grid"></div></section>
+</main>
+<footer>The first logo at power-on comes from the TV's bootloader and can't be changed.</footer>
+
+<div id="editor" class="overlay hidden">
+ <h2>Edit <span id="edname"></span></h2>
+ <div class="edstage"><canvas id="edcv"></canvas></div>
+ <div class="tools">
+  <button class="e btn" data-a="fit">Fit</button><button class="e btn" data-a="fill">Fill</button>
+  <button class="e btn" data-a="zout">Smaller</button><button class="e btn" data-a="zin">Bigger</button>
+  <button class="e btn" data-a="left">Left</button><button class="e btn" data-a="right">Right</button>
+  <button class="e btn" data-a="up">Up</button><button class="e btn" data-a="down">Down</button>
+  <button class="e btn" data-a="center">Center</button>
+ </div>
+ <div class="tools">
+  <button class="e btn" data-a="bg" id="bgbtn">Background: black</button>
+  <button class="e btn" data-a="knock" id="knockbtn">Black → transparent: off</button>
+  <button class="e btn" data-a="tdown">Threshold −</button><button class="e btn" data-a="tup">Threshold +</button>
+  <span id="thr" class="sub"></span>
+ </div>
+ <div class="tools">
+  <button class="e btn primary" data-a="save">Save</button><button class="e btn" data-a="saveas">Save as new</button><button class="e btn" data-a="cancel">Cancel</button>
+ </div>
+</div>
+
+<div id="reportbox" class="overlay hidden">
+ <h2>Report my TV</h2>
+ <div class="rep"><pre id="reptext">Reading</pre>
+  <div class="repside"><div id="repqr" class="qr big"></div><div class="sub">Scan to open a GitHub issue with this report</div>
+   <button class="r btn" id="repclose">Close</button></div></div>
+</div>
+<div id="toast"></div>
+<script src="app.js"></script></body></html>

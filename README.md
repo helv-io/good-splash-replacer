@@ -1,0 +1,77 @@
+# Good Splash Replacer
+
+Replace the LG logo on the power-off screen of a rooted LG webOS TV with your own image. Good, as in Life's Good.
+
+![TV app](docs/tv-main.png)
+
+## Features
+
+- Send a logo from your phone: scan the code on the TV, pick an image, press Send. The preview shows exactly what the TV will show.
+- Apply, Restore LG, and a switch to hide the power-off logo.
+- Edit on the TV: Fit or Fill, size, move, background, black to transparent.
+- Report my TV: read-only details about how your TV draws the logo, sent as a GitHub issue in one scan.
+
+| Phone | TV editor |
+| --- | --- |
+| <img src="docs/phone.png" width="300"> | <img src="docs/tv-editor.png" width="560"> |
+
+## Requirements
+
+- A rooted LG webOS TV with the [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel).
+- Root is required: the logo is replaced with bind mounts.
+
+## Install
+
+From a [release](https://github.com/helv-io/good-splash-replacer/releases), install `io.helv.goodsplash_<version>_all.ipk` with the Homebrew Channel, `ares-install`, or as root on the TV:
+
+```sh
+scp io.helv.goodsplash_<version>_all.ipk root@TV:/tmp/
+ssh root@TV 'luna-send -n 1 luna://com.webos.appInstallService/dev/install "{\"id\":\"io.helv.goodsplash\",\"ipkUrl\":\"/tmp/io.helv.goodsplash_<version>_all.ipk\",\"subscribe\":true}"'
+```
+
+To keep the logo after a reboot, add the two startup scripts to `/var/lib/webosbrew/init.d/`: `init.d/73-goodsplash` starts the service, and a script like the one below re-applies the logo.
+
+```sh
+#!/bin/sh
+# 72-masterbrand-logo: re-apply the bind mounts when Good Splash Replacer has a logo applied
+SRC=/mnt/lg/user/custom-logo/masterbrand
+DST=/usr/lib/qml/MasterBrand
+for f in "$SRC"/LG_logo_*.png; do
+  [ -f "$f" ] || continue
+  grep -q " $DST/$(basename "$f") " /proc/mounts || mount --bind "$f" "$DST/$(basename "$f")"
+done
+```
+
+## How it works
+
+- The power-off screen is the `com.webos.app.masterbrand` QML app. The service reads `MasterBrand.qml`, finds the logo files it uses, such as `LG_logo_4k.png` and `LG_logo_2k.png`, and reads their pixel sizes. Every logo is rendered once per file at exactly that size.
+- Apply copies the rendered files to `/mnt/lg/user/custom-logo/masterbrand/` and bind-mounts them over the stock files. Restore LG unmounts them and deletes the copies.
+- The switch maps to the TV's own `lgLogoDisplay` setting.
+- The service runs as root on port 8086, set in `service/config.json`. It accepts connections from the local network only. Phones can send logos; apply, restore, delete and the switch work from the TV only.
+
+## Safety
+
+- Nothing is written to flash or to any partition. The stock files are never modified.
+- Restore LG undoes everything; so does a reboot without the startup scripts.
+- The report reads the first 64 bytes of the logo partition, read only.
+
+## The first logo cannot change
+
+The first logo at power-on comes from the TV's bootloader, which reads it from its own partition before webOS starts. This app does not touch it.
+
+## Supported TVs
+
+| Model | Firmware | Chip | Power-off logo |
+| --- | --- | --- | --- |
+| 86UA9000AUC | 33.31.75 | Realtek K24N | works |
+
+Another TV? Open Report my TV, scan the code, and send the issue. It has no serial numbers, MAC or IP addresses.
+
+## Development
+
+```sh
+tools/chk.sh                 # syntax, unit tests, ipk build: the same as CI
+tools/release 0.2.1          # bump, check, commit and tag
+```
+
+See [AGENT.md](AGENT.md) for the rules. MIT license; third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

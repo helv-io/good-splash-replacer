@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Good Splash Replacer</title>
+<style>
+:root{--pink:#e6007e}
+*{box-sizing:border-box}
+body{margin:0 auto;font-family:system-ui,sans-serif;background:#111;color:#eee;padding:20px;max-width:560px}
+h1{font-size:22px;margin:0 0 4px}h1 b{color:var(--pink)}
+p{color:#aaa;margin:4px 0 16px}
+.btn{display:block;width:100%;padding:18px;font-size:18px;border:0;border-radius:12px;margin-top:14px;background:var(--pink);color:#fff;font-weight:600}
+.btn.pick{background:#2a2a2a}.btn:disabled{opacity:.4}
+.prev{margin-top:14px}
+.prev figure{margin:0 0 10px}
+.prev canvas{width:100%;height:auto;display:block;border-radius:10px;border:1px solid #333;
+ background-image:linear-gradient(45deg,#1a1a1a 25%,transparent 25%,transparent 75%,#1a1a1a 75%),linear-gradient(45deg,#1a1a1a 25%,transparent 25%,transparent 75%,#1a1a1a 75%);
+ background-size:16px 16px;background-position:0 0,8px 8px;background-color:#000}
+figcaption{font-size:13px;color:#888;margin-top:4px}
+details{margin-top:16px;background:#1a1a1a;border-radius:12px;padding:4px 14px}
+summary{padding:12px 0;font-size:17px;cursor:pointer}
+label{display:block;margin:12px 0 6px;color:#ccc;font-size:15px}
+input[type=range]{width:100%}
+input[type=text]{width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #444;background:#111;color:#fff}
+.seg{display:flex;gap:8px}.seg button{flex:1;padding:12px;border-radius:8px;border:1px solid #444;background:#111;color:#eee;font-size:16px}
+.seg button.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.row{display:flex;gap:10px;align-items:center}.row input[type=color]{width:52px;height:40px;border:0;background:none}
+#msg{margin-top:14px;min-height:22px}
+.hidden{display:none}
+</style></head><body>
+<h1><b>Good</b> Splash Replacer</h1>
+<p>Pick an image. It shows on black when the TV turns off.</p>
+<input id="file" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+<button class="btn pick" id="pick">Choose image</button>
+<div id="prev" class="prev"></div>
+<button class="btn hidden" id="send">Send to TV</button>
+<details id="adjust" class="hidden"><summary>Adjust</summary>
+ <label>Mode</label><div class="seg" id="mode"><button data-v="fit" class="on">Fit</button><button data-v="fill">Fill</button></div>
+ <label>Size <span id="zv">100%</span></label><input id="zoom" type="range" min="20" max="300" value="100">
+ <label>Move sideways</label><input id="dx" type="range" min="-50" max="50" value="0">
+ <label>Move up or down</label><input id="dy" type="range" min="-50" max="50" value="0">
+ <label>Background</label><div class="seg" id="bg"><button data-v="#000000" class="on">Black</button><button data-v="#ffffff">White</button><button data-v="transparent">None</button></div>
+ <div class="row"><label>Custom</label><input id="bgc" type="color" value="#000000"></div>
+ <label><input id="knock" type="checkbox"> Black becomes transparent</label>
+ <label>Threshold <span id="tv">40</span></label><input id="thr" type="range" min="1" max="160" value="40">
+ <label>Name</label><input id="nm" type="text" maxlength="40">
+ <button class="btn pick" id="reset">Reset</button>
+</details>
+<div id="msg"></div>
+<script src="/render.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); };
+var img = null, srcB64 = null, targets = [], o = GSR.defaults();
+function msg(t) { $('msg').textContent = t; }
+fetch('/api/state').then(function (r) { return r.json(); }).then(function (s) {
+  targets = s.targets.slice().sort(function (a, b) { return b.width - a.width; });
+  if (!targets.length) msg('this tv has no power-off logo to replace');
+}).catch(function () { msg('cannot reach the tv'); });
+function draw() {
+  $('zv').textContent = Math.round(o.zoom * 100) + '%'; $('tv').textContent = o.threshold;
+  var box = $('prev'); box.innerHTML = '';
+  if (!img) return;
+  targets.forEach(function (t) {
+    var f = document.createElement('figure'), c = GSR.render(img, t.width, t.height, o);
+    f.appendChild(c); var cap = document.createElement('figcaption'); cap.textContent = t.width + ' x ' + t.height; f.appendChild(cap); box.appendChild(f);
+  });
+}
+function seg(id, key) {
+  [].forEach.call($(id).children, function (b) { b.onclick = function () {
+    [].forEach.call($(id).children, function (x) { x.classList.toggle('on', x === b); }); o[key] = b.dataset.v; draw(); }; });
+}
+function sync() {
+  [].forEach.call($('mode').children, function (b) { b.classList.toggle('on', b.dataset.v === o.mode); });
+  [].forEach.call($('bg').children, function (b) { b.classList.toggle('on', b.dataset.v === o.bg); });
+  $('zoom').value = o.zoom * 100; $('dx').value = o.dx * 100; $('dy').value = o.dy * 100; $('knock').checked = o.knock; $('thr').value = o.threshold;
+}
+seg('mode', 'mode'); seg('bg', 'bg');
+$('bgc').oninput = function () { o.bg = this.value; sync(); draw(); };
+$('zoom').oninput = function () { o.zoom = this.value / 100; draw(); };
+$('dx').oninput = function () { o.dx = this.value / 100; draw(); };
+$('dy').oninput = function () { o.dy = this.value / 100; draw(); };
+$('knock').onchange = function () { o.knock = this.checked; draw(); };
+$('thr').oninput = function () { o.threshold = +this.value; draw(); };
+$('reset').onclick = function () { o = GSR.defaults(); sync(); draw(); };
+$('pick').onclick = function () { $('file').click(); };
+$('file').onchange = function () {
+  var f = this.files[0]; if (!f) return;
+  if (f.size > 12e6) return msg('that file is too big');
+  var rd = new FileReader();
+  rd.onload = function () {
+    var i = new Image();
+    i.onload = function () { img = i; srcB64 = String(rd.result).split(',')[1]; $('nm').value = f.name.replace(/\.[^.]+$/, '').slice(0, 40);
+      o = GSR.defaults(); sync(); draw(); $('send').classList.remove('hidden'); $('adjust').classList.remove('hidden'); msg(''); };
+    i.onerror = function () { msg('that image cannot be read'); };
+    i.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+};
+$('send').onclick = function () {
+  if (!img || !targets.length) return;
+  var b = $('send'); b.disabled = true; msg('sending');
+  fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: $('nm').value, source: srcB64, params: o, renders: GSR.renderAll(img, targets, o) }) })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { msg(j.ok ? 'Sent. Pick it on the TV.' : j.error); b.disabled = false; })
+    .catch(function () { msg('cannot reach the tv'); b.disabled = false; });
+};
+</script></body></html>

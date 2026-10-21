@@ -1,0 +1,73 @@
+# Publishes the ipk on every version tag (v*).
+#
+#   version-gate  the files that repeat the version must match the tag, before anything is built (same check as tools/release).
+#   build         tools/chk.sh (tests and build), then the webosbrew manifest for the ipk.
+#   release       creates the GitHub Release page with generated notes and attaches the ipk and the manifest.
+#   verify        fails if the Release page or its assets are missing.
+#
+# Uses the built-in GITHUB_TOKEN; no other secret is needed.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version-gate:
+    name: version matches the tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .agent-checks/bin/agent-checks release-version "$GITHUB_REF_NAME"
+
+  build:
+    needs: [version-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: tools/chk.sh
+      - name: Manifest
+        run: |
+          ipk=$(ls io.helv.goodsplash_*_all.ipk)
+          node tools/manifest.js "$ipk" "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME" > goodsplash.manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            io.helv.goodsplash_*_all.ipk
+            goodsplash.manifest.json
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            io.helv.goodsplash_*_all.ipk
+            goodsplash.manifest.json
+
+  verify:
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .agent-checks/bin/agent-checks release-assets "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" "io.helv.goodsplash_${GITHUB_REF_NAME#v}_all.ipk" goodsplash.manifest.json

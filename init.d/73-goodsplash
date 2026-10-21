@@ -1,0 +1,3 @@
+#!/bin/sh
+S=/media/developer/apps/usr/palm/applications/io.helv.goodsplash/service/start.sh
+[ -f "$S" ] && sh "$S"

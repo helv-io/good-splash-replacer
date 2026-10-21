@@ -1,0 +1,17 @@
+# Settings for the shared checks (the pinned copy is in .agent-checks/).
+[docs]
+user-facing = "^(app|service)/"
+require = ["README.md", "CHANGELOG.md"]
+
+[private]
+# House addresses and host names stay out of this public repo.
+patterns = ['10\.42\.', '\byolo\b']
+
+# Every file that repeats the version. tools/release writes them; this check proves it before anything is published.
+[[release.version]]
+file = "app/appinfo.json"
+pattern = '"version":\s*"([^"]+)"'
+
+[[release.version]]
+file = "package.json"
+pattern = '(?m)^  "version": "([^"]+)"'

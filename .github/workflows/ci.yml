@@ -1,0 +1,29 @@
+# Syntax, unit tests and the ipk build on every push to any branch and every pull request (tools/chk.sh, the same as a local run).
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    paths-ignore:
+      - CHANGELOG.md
+      - LICENSE
+      - .gitignore
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: tools/chk.sh

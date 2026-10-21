@@ -1,0 +1,43 @@
+name: TV report
+description: Share what Good Splash Replacer found on your TV, from Report my TV
+title: "TV report: "
+labels: ["tv-report"]
+body:
+  - type: markdown
+    attributes:
+      value: Open Report my TV in the app and scan the code. It fills this form. The report has no serial numbers, MAC or IP addresses.
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: 86UA9000AUC
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware
+      placeholder: 33.31.75
+    validations:
+      required: true
+  - type: dropdown
+    id: works
+    attributes:
+      label: Does the power-off logo change?
+      options:
+        - "Yes"
+        - "No"
+        - Not tried
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
