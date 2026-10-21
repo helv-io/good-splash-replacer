@@ -36,7 +36,7 @@ To keep the logo after a reboot, copy both startup scripts to `/var/lib/webosbre
 
 ## How it works
 
-- The power-off screen is the `com.webos.app.masterbrand` QML app. The service reads `MasterBrand.qml`, finds the logo files it uses, such as `LG_logo_4k.png` and `LG_logo_2k.png`, and reads their pixel sizes. Every logo is rendered once per file at exactly that size.
+- The power-off screen is the `com.webos.app.masterbrand` QML app. The service reads `MasterBrand.qml`, finds the logo files it uses, such as `LG_logo_4k.png` and `LG_logo_2k.png`, and the screen each one is shown on. The logo is drawn centered on a full-screen window at its own pixel size, so every logo is rendered once per file at the full screen size, such as 3840 x 2160 and 1920 x 1080. If the screen cannot be read, the stock logo size is used.
 - Apply writes new files to `/mnt/lg/user/custom-logo/masterbrand/` and bind-mounts each one over its stock file: one unmount, one mount, never stacked, and a mounted file is never written. Restore LG unmounts them and deletes the copies.
 - The switch maps to the TV's own `lgLogoDisplay` setting.
 - The service runs as root on port 8086, set in `service/config.json`. It accepts connections from the local network only. Phones can send logos; apply, restore, delete and the switch work from the TV only.

@@ -2,6 +2,13 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3]
+
+### Changed
+
+- Full screen: logos are rendered at the size of the screen the power-off logo is shown on, read from the TV, instead of the small stock logo box. Fit pads with black, Fill covers the screen, smaller images stay centered at their own size
+- Report my TV lists the full-screen size and the stock logo size of each file
+
 ## [0.2.2]
 
 ### Added

@@ -5,7 +5,7 @@ h1{margin:0;font-size:52px;font-weight:600}h2{margin:0 0 20px;font-size:44px;fon
 #status{font-size:26px;color:#999}
 main{padding:0 80px}.lbl{font-size:28px;color:#aaa;margin:16px 0 12px}.sub{font-size:24px;color:#888;margin-top:8px}
 .top{display:flex;gap:50px}
-.stage{width:1000px;height:500px;background:#000;border-radius:16px;display:flex;align-items:center;justify-content:center;border:2px solid #222;overflow:hidden}
+.stage{width:960px;height:540px;background:#000;border-radius:16px;display:flex;align-items:center;justify-content:center;border:2px solid #222;overflow:hidden}
 .stage img{max-width:100%;max-height:100%}
 .side{flex:1;display:flex;flex-direction:column;gap:20px;padding-top:56px}
 .pair{display:flex;gap:20px}.pair .btn{flex:1}
@@ -31,10 +31,10 @@ main{padding:0 80px}.lbl{font-size:28px;color:#aaa;margin:16px 0 12px}.sub{font-
 footer{position:absolute;bottom:30px;left:80px;font-size:22px;color:#666}
 .overlay{position:absolute;inset:0;background:#0b0b0d;padding:50px 80px}
 .hidden{display:none}
-.edstage{width:1000px;height:500px;border-radius:16px;border:2px solid #222;overflow:hidden;
+.edstage{width:960px;height:540px;border-radius:16px;border:2px solid #222;overflow:hidden;
  background-image:linear-gradient(45deg,#1a1a1a 25%,transparent 25%,transparent 75%,#1a1a1a 75%),linear-gradient(45deg,#1a1a1a 25%,transparent 25%,transparent 75%,#1a1a1a 75%);
  background-size:32px 32px;background-position:0 0,16px 16px;background-color:#000;margin-bottom:24px}
-.edstage canvas{width:1000px;height:500px;display:block}
+.edstage canvas{width:960px;height:540px;display:block}
 .tools{display:flex;gap:16px;align-items:center;margin-bottom:18px}.tools .btn{font-size:26px;padding:16px 22px}
 .rep{display:flex;gap:50px}
 .rep pre{flex:1;height:820px;margin:0;overflow:hidden;white-space:pre-wrap;word-break:break-all;font-size:21px;line-height:1.35;background:#141418;border-radius:14px;padding:24px;color:#ccc}

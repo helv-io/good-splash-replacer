@@ -15,7 +15,8 @@ const APP_VERSION = (() => { try { return JSON.parse(fs.readFileSync(path.join(_
 
 // Fallback hints only, used when the logo files cannot be read. Discovery always wins.
 const KNOWN = {
-  K24N: [{ file: 'LG_logo_4k.png', width: 1000, height: 500 }, { file: 'LG_logo_2k.png', width: 500, height: 250 }],
+  K24N: [{ file: 'LG_logo_4k.png', width: 3840, height: 2160, logo: { width: 1000, height: 500 } },
+    { file: 'LG_logo_2k.png', width: 1920, height: 1080, logo: { width: 500, height: 250 } }],
 };
 
 // ---------- pure helpers (unit tested) ----------
@@ -43,6 +44,17 @@ function qmlLogoFiles(qml) {
   const out = [], re = /resolvedUrl\(\s*["']\.\/(LG_logo[^"']*\.png)["']\s*\)/g;
   let m; while ((m = re.exec(qml))) if (!out.includes(m[1])) out.push(m[1]);
   return out;
+}
+// The screen each logo file is shown on, read from the QML: the logo is drawn centered at its pixel size on a
+// full-screen window, so a PNG the size of that window fills the screen. Returns { file: { width, height } }.
+function qmlScreens(qml) {
+  const num = re => { const m = qml.match(re); return m ? Number(m[1]) : null; };
+  const w = num(/screenWidth:[^\n]*?:\s*(\d+)/), h = num(/screenHeight:[^\n]*?:\s*(\d+)/);
+  const k = qml.match(/is4K:\s*\(\s*root\.width\s*\/\s*(\d+)\s*\)\s*===\s*(\d+)/);
+  const pair = qml.match(/\?\s*Qt\.resolvedUrl\(\s*["\x27]\.\/(LG_logo[^"\x27]*\.png)["\x27]\s*\)\s*:\s*Qt\.resolvedUrl\(\s*["\x27]\.\/(LG_logo[^"\x27]*\.png)["\x27]\s*\)/);
+  if (!w || !h || !k || !pair || Number(k[1]) !== w) return {};
+  const f = Number(k[2]);
+  return { [pair[1]]: { width: w * f, height: h * f }, [pair[2]]: { width: w, height: h } };
 }
 // Renders must be exactly one PNG per target at the target's size.
 function validateRenders(renders, targets) {
@@ -84,13 +96,17 @@ function discover(force) {
     if (fs.existsSync(qml)) files = qmlLogoFiles(fs.readFileSync(qml, 'utf8'));
     if (!files.length && fs.existsSync(dir)) { files = fs.readdirSync(dir).filter(f => /^LG_logo.*\.png$/.test(f)).sort().reverse(); how = 'files'; }
     if (!files.length) continue;
-    const targets = [];
+    const targets = [], screens = fs.existsSync(qml) ? qmlScreens(fs.readFileSync(qml, 'utf8')) : {};
     for (const file of files) {
       const p = path.join(dir, file);
       // A bind-mounted file shows our image, so prefer the size recorded before we mounted anything.
       let d = mounted(p) && cache[p] ? cache[p] : null;
       if (!d) { try { const fd = fs.openSync(p, 'r'), b = Buffer.alloc(33); fs.readSync(fd, b, 0, 33, 0); fs.closeSync(fd); d = pngDims(b); } catch (e) {} }
-      if (d) { targets.push({ file, width: d.width, height: d.height, path: p }); cache[p] = { width: d.width, height: d.height }; }
+      if (!d) continue;
+      cache[p] = { width: d.width, height: d.height };
+      // Full screen when the QML tells us the screen; otherwise the stock logo size, which always works.
+      const sc = screens[file] && screens[file].width >= d.width && screens[file].height >= d.height ? screens[file] : d;
+      targets.push({ file, width: sc.width, height: sc.height, logo: { width: d.width, height: d.height }, path: p });
     }
     try { fs.writeFileSync(cacheFile, JSON.stringify(cache)); } catch (e) {}
     if (targets.length) return (discovered = { dir, qml: fs.existsSync(qml) ? qml : null, how, targets });
@@ -231,7 +247,7 @@ async function report() {
     model, firmware: info.firmwareVersion || null, webos: info.sdkVersion || null, release: release || null,
     chip: (cmdline.match(/\bchip=(\S+)/) || [])[1] || null, board: info.boardType || null,
     masterbrand: { dir: d.dir, qml: d.qml, discovery: d.how,
-      targets: d.targets.map(t => ({ file: t.file, width: t.width, height: t.height, path: t.path, md5: t.path ? md5(t.path) : null, overridden: t.path ? mounted(t.path) : false })) },
+      targets: d.targets.map(t => ({ file: t.file, width: t.width, height: t.height, logo: t.logo || null, path: t.path, md5: t.path ? md5(t.path) : null, overridden: t.path ? mounted(t.path) : false })) },
     supportPowerOffLogoCustomization: prof && prof.profiles && prof.profiles.customization ? !!prof.profiles.customization.supportPowerOffLogoCustomization : null,
     lgLogoDisplay: set && set.settings ? set.settings.lgLogoDisplay : null,
     snapshotBoot: /\bsnapshot\b/.test(cmdline), resume: (cmdline.match(/\bresume=(\S+)/) || [])[1] || null,
@@ -239,7 +255,7 @@ async function report() {
   };
 }
 function reportText(r) {
-  const t = r.masterbrand.targets.map(x => '  - ' + x.file + ' ' + x.width + 'x' + x.height + ' md5 ' + x.md5 + (x.overridden ? ' (replaced by app)' : '')).join('\n');
+  const t = r.masterbrand.targets.map(x => '  - ' + x.file + ' ' + x.width + 'x' + x.height + (x.logo ? ' stock ' + x.logo.width + 'x' + x.logo.height : '') + ' md5 ' + x.md5 + (x.overridden ? ' (replaced by app)' : '')).join('\n');
   return ['Model: ' + r.model, 'Firmware: ' + r.firmware, 'webOS: ' + r.webos + ' / ' + r.release, 'Chip: ' + r.chip, 'Board: ' + r.board,
     'App: ' + r.app, 'MasterBrand: ' + r.masterbrand.qml + ' via ' + r.masterbrand.discovery, 'Targets:', t || '  none',
     'supportPowerOffLogoCustomization: ' + r.supportPowerOffLogoCustomization, 'lgLogoDisplay: ' + r.lgLogoDisplay,
@@ -341,5 +357,5 @@ function onSignals(srv) {
   process.once('SIGTERM', stop); process.once('SIGINT', stop);
 }
 
-module.exports = { readActive, pngDims, sniffImage, isLan, isLocal, qmlLogoFiles, validateRenders, cleanName, cleanId, reportText, issueURL, start, handler, KNOWN };
+module.exports = { readActive, pngDims, sniffImage, isLan, isLocal, qmlLogoFiles, qmlScreens, validateRenders, cleanName, cleanId, reportText, issueURL, start, handler, KNOWN };
 if (require.main === module) onSignals(start());

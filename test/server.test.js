@@ -15,6 +15,9 @@ function png(w, h) {
   return b;
 }
 fs.writeFileSync(path.join(qmlDir, 'MasterBrand.qml'),
+  'property bool is4K: (root.width / 1920) === 2\n' +
+  'property real screenWidth: isDevice ? parent.width : 1920\n' +
+  'property real screenHeight: isDevice ? parent.height : 1080\n' +
   'return (hiRes ? Qt.resolvedUrl("./power_off_starwars_4k.png") : x);\n' +
   'return (hiRes ? Qt.resolvedUrl("./LG_logo_4k.png") : Qt.resolvedUrl("./LG_logo_2k.png"));\n');
 fs.writeFileSync(path.join(qmlDir, 'LG_logo_4k.png'), png(1000, 500));
@@ -37,7 +40,7 @@ function call(method, p, body) {
   });
 }
 const b64 = b => b.toString('base64');
-const good = () => ({ 'LG_logo_4k.png': b64(png(1000, 500)), 'LG_logo_2k.png': b64(png(500, 250)) });
+const good = () => ({ 'LG_logo_4k.png': b64(png(3840, 2160)), 'LG_logo_2k.png': b64(png(1920, 1080)) });
 
 test('pngDims reads the header and rejects non-png data', () => {
   assert.deepEqual(S.pngDims(png(12, 34)), { width: 12, height: 34 });
@@ -61,6 +64,21 @@ test('qmlLogoFiles finds the logo files the QML references, not other images', (
   assert.deepEqual(S.qmlLogoFiles(fs.readFileSync(path.join(qmlDir, 'MasterBrand.qml'), 'utf8')), ['LG_logo_4k.png', 'LG_logo_2k.png']);
 });
 
+test('qmlScreens derives the full-screen size of each logo file from the QML', () => {
+  const q = fs.readFileSync(path.join(qmlDir, 'MasterBrand.qml'), 'utf8');
+  assert.deepEqual(S.qmlScreens(q), { 'LG_logo_4k.png': { width: 3840, height: 2160 }, 'LG_logo_2k.png': { width: 1920, height: 1080 } });
+  assert.deepEqual(S.qmlScreens(q.replace('=== 2', '=== 3')), { 'LG_logo_4k.png': { width: 5760, height: 3240 }, 'LG_logo_2k.png': { width: 1920, height: 1080 } });
+  // Without the screen rules the stock logo sizes are used.
+  assert.deepEqual(S.qmlScreens(q.split('\n').slice(3).join('\n')), {});
+});
+
+test('the report lists the full-screen size and the stock logo size', async () => {
+  const r = (await call('GET', '/api/report')).body;
+  assert.deepEqual(r.masterbrand.targets.map(t => [t.width, t.height, t.logo]),
+    [[3840, 2160, { width: 1000, height: 500 }], [1920, 1080, { width: 500, height: 250 }]]);
+  assert.match(r.text, /LG_logo_4k\.png 3840x2160 stock 1000x500/);
+});
+
 test('validateRenders checks names and sizes against the discovered targets', () => {
   const t = [{ file: 'a.png', width: 10, height: 5 }];
   assert.equal(typeof S.validateRenders({ 'a.png': b64(png(10, 5)) }, t), 'object');
@@ -73,7 +91,7 @@ test('validateRenders checks names and sizes against the discovered targets', ()
 test('state reports the discovered targets with their real sizes', async () => {
   const r = await call('GET', '/api/state');
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body.targets, [{ file: 'LG_logo_4k.png', width: 1000, height: 500 }, { file: 'LG_logo_2k.png', width: 500, height: 250 }]);
+  assert.deepEqual(r.body.targets, [{ file: 'LG_logo_4k.png', width: 3840, height: 2160 }, { file: 'LG_logo_2k.png', width: 1920, height: 1080 }]);
   assert.equal(r.body.discovery, 'qml');
   assert.equal(r.body.current, 'lg');
 });
@@ -86,8 +104,8 @@ test('the bundled starter logo is seeded once', async () => {
 });
 
 test('uploads are validated', async () => {
-  assert.equal((await call('POST', '/api/upload', { name: 'x', source: b64(png(5, 5)), renders: { 'LG_logo_4k.png': b64(png(1000, 500)) } })).status, 400);
-  assert.equal((await call('POST', '/api/upload', { name: 'x', source: b64(png(5, 5)), renders: Object.assign(good(), { 'LG_logo_2k.png': b64(png(500, 251)) }) })).status, 400);
+  assert.equal((await call('POST', '/api/upload', { name: 'x', source: b64(png(5, 5)), renders: { 'LG_logo_4k.png': b64(png(3840, 2160)) } })).status, 400);
+  assert.equal((await call('POST', '/api/upload', { name: 'x', source: b64(png(5, 5)), renders: Object.assign(good(), { 'LG_logo_2k.png': b64(png(1000, 500)) }) })).status, 400);
   assert.equal((await call('POST', '/api/upload', { name: 'x', source: b64(Buffer.from('hello world!!')), renders: good() })).status, 400);
   assert.equal((await call('POST', '/api/upload', { name: 'x', renders: good() })).status, 400);
 });
